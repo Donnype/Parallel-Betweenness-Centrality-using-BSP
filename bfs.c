@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-const long NR_VERTICES = 5;
+const long NR_VERTICES = 10;
 
 struct Node {
     long data;
@@ -32,6 +32,7 @@ long *bfs(long adjacency[NR_VERTICES][NR_VERTICES], long source) {
     }
 
     distances[source] = 0;
+
     struct Node *head = NULL;
     head = (struct Node *) malloc(sizeof(struct Node));
     head->data = source;
@@ -74,15 +75,40 @@ long *bfs(long adjacency[NR_VERTICES][NR_VERTICES], long source) {
 
 
 int main(int argc, char **argv) {
-    long graph[5][5] = {
-            {0, 1, 1, 1, 0},
-            {1, 0, 0, 0, 0},
-            {1, 0, 0, 0, 0},
-            {1, 0, 0, 0, 1},
-            {0, 0, 0, 1, 0},
+//    long graph[5][5] = {
+//            {0, 1, 1, 1, 0},
+//            {1, 0, 0, 0, 0},
+//            {1, 0, 0, 0, 0},
+//            {1, 0, 0, 0, 1},
+//            {0, 0, 0, 1, 0},
+//    };
+    /*
+        0, 0, 0, 1, 0, 1, 0, 1, 0, 1
+        0, 0, 0, 0, 0, 0, 1, 1, 1, 1
+        0, 0, 0, 1, 0, 0, 1, 1, 1, 1
+        1, 0, 1, 0, 1, 0, 0, 1, 1, 1
+        0, 0, 0, 1, 0, 0, 0, 0, 0, 0
+        1, 0, 0, 0, 0, 0, 1, 0, 1, 1
+        0, 1, 1, 0, 0, 1, 0, 0, 0, 0
+        1, 1, 1, 1, 0, 0, 0, 0, 0, 0
+        0, 1, 1, 1, 0, 1, 0, 0, 0, 0
+        1, 1, 1, 1, 0, 1, 0, 0, 0, 0
+     */
+
+    long graph[10][10] = {
+            {0, 0, 0, 1, 0, 1, 0, 1, 0, 1},
+            {0, 0, 0, 0, 0, 0, 1, 1, 1, 1},
+            {0, 0, 0, 1, 0, 0, 1, 1, 1, 1},
+            {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+            {1, 0, 0, 0, 0, 0, 1, 0, 1, 1},
+            {0, 1, 1, 0, 0, 1, 0, 0, 0, 0},
+            {1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
+            {0, 1, 1, 1, 0, 1, 0, 0, 0, 0},
+            {1, 1, 1, 1, 0, 1, 0, 0, 0, 0}
     };
 
-    long s = 0;
+    long s = 4;
     long *distances = bfs(graph, s);
 
     for (long i = 0; i < NR_VERTICES; ++i) {
