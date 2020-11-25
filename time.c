@@ -1,4 +1,5 @@
 # include <stdio.h>
+#include <stdlib.h>
 # include <time.h>
 # include <math.h>
 #include <unistd.h>
@@ -22,9 +23,11 @@ double time_bfs_linked(short **matrix) {
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    bfs_linked(matrix, 0);
+    long *d = bfs_linked(matrix, 0);
 
     clock_gettime(CLOCK_REALTIME, &end);
+
+    free(d);
 
     return diff(start, end);
 }
@@ -35,31 +38,45 @@ double time_bfs_vec(short **matrix) {
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    bfs_vec(matrix, 0);
+    long *d = bfs_vec(matrix, 0);
 
     clock_gettime(CLOCK_REALTIME, &end);
+
+    free(d);
 
     return diff(start, end);
 }
 
 
 int main(int argc, char **argv) {
-    int c, i;
-    double ms;
+    int c, runs = 5.0;
+    double ms = 0.0;
 
 //    Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":s:p:l:f:F")) != -1) {
+    while ((c = getopt (argc, argv, ":b")) != -1) {
         switch (c){
             default:
                 printf("BFS linked list vs array: \n\n");
                 printf("fn\tms\n");
 
                 short **matrix = generate_symmetric_matrix();
-                ms = time_bfs_linked(matrix);
-                printf("link\t%f", ms);
 
-                ms = time_bfs_vec(matrix);
-                printf("link\t%f", ms);
+                for (int i = 0; i < runs; ++i) {
+                    ms += time_bfs_linked(matrix);
+                }
+
+                ms = ms / runs;
+                printf("link\t%f\n", ms);
+                ms = 0.0;
+
+                for (int i = 0; i < runs; ++i) {
+                    ms += time_bfs_vec(matrix);
+                }
+
+                ms = ms / runs;
+                printf("vec\t%f\n", ms);
+
+                free(matrix);
 
                 return 0;
         }

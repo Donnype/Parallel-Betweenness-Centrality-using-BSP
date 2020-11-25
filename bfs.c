@@ -6,8 +6,8 @@
 #include <time.h>
 #include <string.h>
 
-const long NR_VERTICES = 20;
-const long NBH_INIT_SIZE = 5;
+const long NR_VERTICES = 100;
+const long NBH_INIT_SIZE = 10;
 
 struct Node {
     long data;
@@ -39,7 +39,7 @@ short **generate_symmetric_matrix() {
 
     for (long i = 0; i < NR_VERTICES; ++i) {
         for (long j = i; j < NR_VERTICES; ++j) {
-            short val = rand() % 7 % 5 % 3 % 2;
+            short val = rand() % 2;
 
             matrix[i][j] = val;
             matrix[j][i] = val;
@@ -142,7 +142,6 @@ long *bfs_vec(short **adjacency, long source) {
     if (neighborhood != NULL) {
         free(neighborhood);
     }
-
 
     if (new_neighborhood != NULL) {
         free(new_neighborhood);
