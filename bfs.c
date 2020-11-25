@@ -2,20 +2,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <math.h>
+#include <time.h>
+#include <string.h>
 
-const long NR_VERTICES = 10;
+const long NR_VERTICES = 20;
+const long NBH_INIT_SIZE = 5;
 
 struct Node {
     long data;
     struct Node *next;
 };
 
-void print_matrix(long matrix[NR_VERTICES][NR_VERTICES]) {
+
+void print_matrix(short **matrix) {
     printf("Two Dimensional array elements:\n");
 
     for (long i = 0; i < NR_VERTICES; i++) {
         for (long j = 0; j < NR_VERTICES; j++) {
-            printf("%ld ", matrix[i][j]);
+            printf("%i ", matrix[i][j]);
             if (j == NR_VERTICES - 1) {
                 printf("\n");
             }
@@ -24,23 +29,39 @@ void print_matrix(long matrix[NR_VERTICES][NR_VERTICES]) {
 }
 
 
-long *bfs(long adjacency[NR_VERTICES][NR_VERTICES], long source) {
-    long *distances = malloc(NR_VERTICES * sizeof(long));
+short **generate_symmetric_matrix() {
+    srand(time(NULL));
+    short **matrix = (short **) malloc(NR_VERTICES * sizeof(short *));
 
     for (long i = 0; i < NR_VERTICES; ++i) {
-        distances[i] = -1;
+        matrix[i] = (short *) malloc(NR_VERTICES * sizeof(short));
     }
+
+    for (long i = 0; i < NR_VERTICES; ++i) {
+        for (long j = i; j < NR_VERTICES; ++j) {
+            short val = rand() % 7 % 5 % 3 % 2;
+
+            matrix[i][j] = val;
+            matrix[j][i] = val;
+        }
+    }
+
+    return matrix;
+}
+
+
+long *bfs_linked(short **adjacency, long source) {
+    long *distances = malloc(NR_VERTICES * sizeof(long));
+    memset(distances, -1, NR_VERTICES * sizeof(long));
 
     distances[source] = 0;
 
-    struct Node *head = NULL;
+    struct Node *head = NULL, *next_neighbour = NULL;
     head = (struct Node *) malloc(sizeof(struct Node));
     head->data = source;
 
     for (long level = 1; level < NR_VERTICES; ++level) {
-        struct Node *neighbour_head = NULL;
-        struct Node *neighbour = NULL;
-        struct Node *node = head;
+        struct Node *neighbour_head = NULL, *neighbour = NULL, *next_neighbour = NULL, *node = head;
 
         while (node != NULL) {
             for (long i = 0; i < NR_VERTICES; ++i) {
@@ -55,7 +76,6 @@ long *bfs(long adjacency[NR_VERTICES][NR_VERTICES], long source) {
                         continue;
                     }
 
-                    struct Node *next_neighbour = NULL;
                     next_neighbour = (struct Node *) malloc(sizeof(struct Node));
 
                     next_neighbour->data = i;
@@ -70,54 +90,63 @@ long *bfs(long adjacency[NR_VERTICES][NR_VERTICES], long source) {
         head = neighbour_head;
     }
 
+    if (head != NULL) {
+        free(head);
+    }
+
+    if (next_neighbour != NULL) {
+        free(next_neighbour);
+    }
+
     return distances;
 }
 
 
-int main(int argc, char **argv) {
-//    long graph[5][5] = {
-//            {0, 1, 1, 1, 0},
-//            {1, 0, 0, 0, 0},
-//            {1, 0, 0, 0, 0},
-//            {1, 0, 0, 0, 1},
-//            {0, 0, 0, 1, 0},
-//    };
-    /*
-        0, 0, 0, 1, 0, 1, 0, 1, 0, 1
-        0, 0, 0, 0, 0, 0, 1, 1, 1, 1
-        0, 0, 0, 1, 0, 0, 1, 1, 1, 1
-        1, 0, 1, 0, 1, 0, 0, 1, 1, 1
-        0, 0, 0, 1, 0, 0, 0, 0, 0, 0
-        1, 0, 0, 0, 0, 0, 1, 0, 1, 1
-        0, 1, 1, 0, 0, 1, 0, 0, 0, 0
-        1, 1, 1, 1, 0, 0, 0, 0, 0, 0
-        0, 1, 1, 1, 0, 1, 0, 0, 0, 0
-        1, 1, 1, 1, 0, 1, 0, 0, 0, 0
-     */
+long *bfs_vec(short **adjacency, long source) {
+    long *distances = malloc(NR_VERTICES * sizeof(long));
+    long *neighborhood = malloc(NBH_INIT_SIZE * sizeof(long));
+    long *new_neighborhood = malloc(NBH_INIT_SIZE * sizeof(long));
 
-    long graph[10][10] = {
-            {0, 0, 0, 1, 0, 1, 0, 1, 0, 1},
-            {0, 0, 0, 0, 0, 0, 1, 1, 1, 1},
-            {0, 0, 0, 1, 0, 0, 1, 1, 1, 1},
-            {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-            {1, 0, 0, 0, 0, 0, 1, 0, 1, 1},
-            {0, 1, 1, 0, 0, 1, 0, 0, 0, 0},
-            {1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
-            {0, 1, 1, 1, 0, 1, 0, 0, 0, 0},
-            {1, 1, 1, 1, 0, 1, 0, 0, 0, 0}
-    };
+    memset(distances, -1, NR_VERTICES * sizeof(long));
 
-    long s = 4;
-    long *distances = bfs(graph, s);
+    distances[source] = 0;
+    neighborhood[0] = source;
+    neighborhood[1] = -1;
+    long size_nbh = NBH_INIT_SIZE;
 
-    for (long i = 0; i < NR_VERTICES; ++i) {
-        printf(" %ld \n", distances[i]);
+    for (long level = 1; level < NR_VERTICES; ++level) {
+        long counter = 0;
+
+        for (long i = 0; neighborhood[i] >= 0; ++i) {
+            long vertex = neighborhood[i];
+
+            for (long j = 0; j < NR_VERTICES; ++j) {
+                if (adjacency[j][vertex] > 0 && distances[j] < 0) {
+                    distances[j] = level;
+                    new_neighborhood[counter] = j;
+                    counter++;
+                }
+
+                if (counter >= size_nbh - 1) {
+                    size_nbh = 2 * size_nbh;
+                    new_neighborhood = realloc(new_neighborhood, size_nbh * sizeof(long));
+                    neighborhood = realloc(neighborhood, size_nbh * sizeof(long));
+                }
+            }
+        }
+
+        new_neighborhood[counter + 1] = -1;
+        memcpy(neighborhood, new_neighborhood, size_nbh * sizeof(long));
     }
 
-    if (distances != NULL) {
-        free(distances);
+    if (neighborhood != NULL) {
+        free(neighborhood);
     }
 
-    return 0;
+
+    if (new_neighborhood != NULL) {
+        free(new_neighborhood);
+    }
+
+    return distances;
 }

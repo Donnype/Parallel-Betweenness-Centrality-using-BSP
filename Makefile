@@ -2,14 +2,17 @@ CC= bspcc
 CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L
 LFLAGS= -lm
 
-BFS = bfs.c
+all: time test
 
-all: bfs
+SCRIPT = time
+$(SCRIPT): $(SCRIPT).c bfs.c
+	$(CC) $(CFLAGS) -o $(SCRIPT) $(SCRIPT).c bfs.c $(LFLAGS)
 
-parallel: $(BFS)
-	$(CC) $(CFLAGS) -o bfs $(PARALLEL) $(LFLAGS)
+SCRIPT = test
+$(SCRIPT): $(SCRIPT).c bfs.c
+	$(CC) $(CFLAGS) -o $(SCRIPT) $(SCRIPT).c bfs.c $(LFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f bfs
+	rm -f time test
