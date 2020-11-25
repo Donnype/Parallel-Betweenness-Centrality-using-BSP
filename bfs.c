@@ -6,8 +6,10 @@
 #include <time.h>
 #include <string.h>
 
-const long NR_VERTICES = 100;
-const long NBH_INIT_SIZE = 10;
+const long NR_VERTICES = 1000;
+const long NBH_INIT_SIZE = 2;
+const short SPARSITY = 10;
+
 
 struct Node {
     long data;
@@ -16,7 +18,7 @@ struct Node {
 
 
 void print_matrix(short **matrix) {
-    printf("Two Dimensional array elements:\n");
+    printf("Two Dimensional array elements:\n\n");
 
     for (long i = 0; i < NR_VERTICES; i++) {
         for (long j = 0; j < NR_VERTICES; j++) {
@@ -26,6 +28,15 @@ void print_matrix(short **matrix) {
             }
         }
     }
+
+    printf("\n");
+}
+
+
+void swap(long** a, long** b) {
+    long* temp = *a;
+    *a = *b;
+    *b = temp;
 }
 
 
@@ -39,7 +50,29 @@ short **generate_symmetric_matrix() {
 
     for (long i = 0; i < NR_VERTICES; ++i) {
         for (long j = i; j < NR_VERTICES; ++j) {
-            short val = rand() % 2;
+            // The SPARSITY constant defines that on average 1 out of SPARSITY edges are present.
+            short val = (rand() % SPARSITY) == 0;
+
+            matrix[i][j] = val;
+            matrix[j][i] = val;
+        }
+    }
+
+    return matrix;
+}
+
+
+short **fill_buffer(short graph[NR_VERTICES][NR_VERTICES]) {
+    short **matrix = (short **) malloc(NR_VERTICES * sizeof(short *));
+
+    for (long i = 0; i < NR_VERTICES; ++i) {
+        matrix[i] = (short *) malloc(NR_VERTICES * sizeof(short));
+    }
+
+    for (long i = 0; i < NR_VERTICES; ++i) {
+        for (long j = i; j < NR_VERTICES; ++j) {
+            // The SPARSITY constant defines that on average 1 out of SPARSITY edges are present.
+            short val = graph[i][j];
 
             matrix[i][j] = val;
             matrix[j][i] = val;
@@ -56,7 +89,7 @@ long *bfs_linked(short **adjacency, long source) {
 
     distances[source] = 0;
 
-    struct Node *head = NULL, *next_neighbour = NULL;
+    struct Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
     head = (struct Node *) malloc(sizeof(struct Node));
     head->data = source;
 
@@ -98,20 +131,29 @@ long *bfs_linked(short **adjacency, long source) {
         free(next_neighbour);
     }
 
+    if (neighbour_head != NULL) {
+        free(neighbour_head);
+    }
+
+    if (neighbour != NULL) {
+        free(neighbour);
+    }
+
     return distances;
 }
 
 
 long *bfs_vec(short **adjacency, long source) {
     long *distances = malloc(NR_VERTICES * sizeof(long));
-    long *neighborhood = malloc(NBH_INIT_SIZE * sizeof(long));
-    long *new_neighborhood = malloc(NBH_INIT_SIZE * sizeof(long));
+    long *neighborhood = calloc(NBH_INIT_SIZE, sizeof(long));
+    long *new_neighborhood = calloc(NBH_INIT_SIZE, sizeof(long));
 
     memset(distances, -1, NR_VERTICES * sizeof(long));
 
     distances[source] = 0;
     neighborhood[0] = source;
     neighborhood[1] = -1;
+
     long size_nbh = NBH_INIT_SIZE;
 
     for (long level = 1; level < NR_VERTICES; ++level) {
@@ -127,15 +169,15 @@ long *bfs_vec(short **adjacency, long source) {
                     counter++;
                 }
 
-                if (counter >= size_nbh - 1) {
+                if (counter + 1 >= size_nbh) {
+                    new_neighborhood = realloc(new_neighborhood, 2 * size_nbh * sizeof(long));
+                    neighborhood = realloc(neighborhood, 2 * size_nbh * sizeof(long));
                     size_nbh = 2 * size_nbh;
-                    new_neighborhood = realloc(new_neighborhood, size_nbh * sizeof(long));
-                    neighborhood = realloc(neighborhood, size_nbh * sizeof(long));
                 }
             }
         }
 
-        new_neighborhood[counter + 1] = -1;
+        new_neighborhood[counter] = -1;
         memcpy(neighborhood, new_neighborhood, size_nbh * sizeof(long));
     }
 
