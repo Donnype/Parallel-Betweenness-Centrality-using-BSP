@@ -4,17 +4,13 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include "Node.h"
 
 long NR_VERTICES = 10;
 long NBH_INIT_SIZE = 2;
-short SPARSITY = 3;
+long SPARSITY = 3;
 
-
-struct Node {
-    long data;
-    struct Node *next;
-};
-
+//struct Node;
 
 void print_matrix(short **matrix) {
     printf("Two Dimensional array elements:\n\n");
@@ -81,6 +77,25 @@ short **fill_buffer(short graph[NR_VERTICES][NR_VERTICES]) {
 }
 
 
+void free_variables(struct Node *first, struct Node *second, struct Node *third, struct Node *fourth) {
+    if (first != NULL) {
+        free(first);
+    }
+
+    if (second != NULL) {
+        free(second);
+    }
+
+    if (third != NULL) {
+        free(third);
+    }
+
+    if (fourth != NULL) {
+        free(fourth);
+    }
+}
+
+
 long *bfs_linked(short **adjacency, long source) {
     long *distances = malloc(NR_VERTICES * sizeof(long));
     memset(distances, -1, NR_VERTICES * sizeof(long));
@@ -120,6 +135,8 @@ long *bfs_linked(short **adjacency, long source) {
 
         head = neighbour_head;
     }
+
+    free_variables(head, next_neighbour, neighbour_head, neighbour);
 
     if (head != NULL) {
         free(head);
