@@ -1,18 +1,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-# include "bfs.h"
+#include "bfs.h"
 
 
 extern long NR_VERTICES;
-extern long NBH_INIT_SIZE;
+
 
 int main(int argc, char **argv) {
     /*
 
-    Some examples:
+    Some examples to fill a buffer with:
 
-    long graph[5][5] = {
+    short graph[5][5] = {
             {0, 1, 1, 1, 0},
             {1, 0, 0, 0, 0},
             {1, 0, 0, 0, 0},
@@ -20,29 +20,6 @@ int main(int argc, char **argv) {
             {0, 0, 0, 1, 0},
     };
 
-        0, 0, 0, 1, 0, 1, 0, 1, 0, 1
-        0, 0, 0, 0, 0, 0, 1, 1, 1, 1
-        0, 0, 0, 1, 0, 0, 1, 1, 1, 1
-        1, 0, 1, 0, 1, 0, 0, 1, 1, 1
-        0, 0, 0, 1, 0, 0, 0, 0, 0, 0
-        1, 0, 0, 0, 0, 0, 1, 0, 1, 1
-        0, 1, 1, 0, 0, 1, 0, 0, 0, 0
-        1, 1, 1, 1, 0, 0, 0, 0, 0, 0
-        0, 1, 1, 1, 0, 1, 0, 0, 0, 0
-        1, 1, 1, 1, 0, 1, 0, 0, 0, 0
-{
-     {0, 0, 0, 0, 0, 1, 0, 0, 0, 0}
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-{0, 0, 0, 0, 0, 0, 0, 1, 0, 0}
-{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-{1, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-{0, 0, 0, 0, 0, 0, 0, 0, 1, 0}
-{0, 0, 0, 1, 0, 0, 0, 0, 0, 0}
-{0, 0, 0, 0, 0, 0, 1, 0, 0, 0}
-{0, 0, 0, 0, 1, 0, 0, 0, 0, 0}
-}
-    */
     short graph[10][10] = {
             { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0 },
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -56,13 +33,16 @@ int main(int argc, char **argv) {
             { 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 }
     };
 
+    short **matrix = fill_buffer(graph);
+    long s = 4;
+
+    */
+
     srand(time(NULL));
 
     short **matrix = generate_symmetric_matrix();
     long s = rand() % NR_VERTICES;
 
-//    short **matrix = fill_buffer(graph);
-//    long s = 4;
     print_matrix(matrix);
 
 

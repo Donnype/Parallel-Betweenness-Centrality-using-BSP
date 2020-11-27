@@ -1,4 +1,3 @@
-#include <bsp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -6,9 +5,9 @@
 #include <time.h>
 #include <string.h>
 
-const long NR_VERTICES = 1000;
+const long NR_VERTICES = 10;
 const long NBH_INIT_SIZE = 2;
-const short SPARSITY = 10;
+const short SPARSITY = 3;
 
 
 struct Node {
@@ -71,7 +70,6 @@ short **fill_buffer(short graph[NR_VERTICES][NR_VERTICES]) {
 
     for (long i = 0; i < NR_VERTICES; ++i) {
         for (long j = i; j < NR_VERTICES; ++j) {
-            // The SPARSITY constant defines that on average 1 out of SPARSITY edges are present.
             short val = graph[i][j];
 
             matrix[i][j] = val;
