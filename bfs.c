@@ -5,9 +5,9 @@
 #include <time.h>
 #include <string.h>
 
-const long NR_VERTICES = 10;
-const long NBH_INIT_SIZE = 2;
-const short SPARSITY = 3;
+long NR_VERTICES = 10;
+long NBH_INIT_SIZE = 2;
+short SPARSITY = 3;
 
 
 struct Node {

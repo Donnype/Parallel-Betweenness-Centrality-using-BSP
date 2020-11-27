@@ -2,6 +2,7 @@
 #define BSF_H_
 
 extern long NR_VERTICES;
+extern long SPARSITY;
 
 long *bfs_linked(short **adjacency, long source);
 long *bfs_vec(short **adjacency, long source);

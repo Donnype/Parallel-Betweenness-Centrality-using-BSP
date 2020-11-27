@@ -40,16 +40,19 @@ void vertex_partition(short ***M) {
 
 int main(int argc, char **argv) {
     int c;
-    long n;
+    long n, sparsity = SPARSITY;
 
     // Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":p:n:")) != -1) {
+    while ((c = getopt (argc, argv, ":p:n:s:")) != -1) {
         switch (c){
             case 'p':
                 P = strtol(optarg, NULL, 10);
                 break;
             case 'n':
                 n = strtoul(optarg, NULL, 10);
+                break;
+            case 's':
+                sparsity = strtoul(optarg, NULL, 10);
                 break;
         }
     }
@@ -74,7 +77,8 @@ int main(int argc, char **argv) {
         fflush(stdin);
     }
 
-//    NR_VERTICES = n;
+    NR_VERTICES = n;
+    SPARSITY = sparsity;
     matrix = generate_symmetric_matrix();
 
     vertex_partition(&matrix);
