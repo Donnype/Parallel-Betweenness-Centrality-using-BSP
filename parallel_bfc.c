@@ -12,6 +12,7 @@
 long P;
 
 extern long NR_VERTICES;
+long NR_VERTICES_PER_P;
 
 // A matrix representation of the graph, vertex partitioned.
 short **adjacency_matrix;
@@ -21,8 +22,19 @@ long source;
 void parallel_bfs() {
     bsp_begin(P);
 
-    long *distances = malloc(NR_VERTICES * sizeof(long));
-    memset(distances, -1, NR_VERTICES * sizeof(long));
+    long current_process_id = bsp_pid();
+
+    long *distances = malloc(NR_VERTICES_PER_P * sizeof(long));
+    memset(distances, -1, NR_VERTICES_PER_P * sizeof(long));
+/*
+    bool *ints = ;
+
+    bool *Ints = calloc(n, sizeof(bool));
+    bsp_push_reg(Ints, n * sizeof(bool));
+    bsp_sync();
+
+    bsp_put(0, ints, Ints, start_block * sizeof(bool), length * sizeof(bool));
+    bsp_sync();
 
     distances[source] = 0;
 
@@ -61,19 +73,20 @@ void parallel_bfs() {
     }
 
     free_variables(head, next_neighbour, neighbour_head, neighbour);
-
+*/
     bsp_end();
 }
 
 
-void vertex_partition(short ***M) {
-    srand(time(NULL));
+long **vertex_partition(short ***M) {
     short ** matrix = *M;
 
     for (long i = 0; i < NR_VERTICES; ++i) {
+        // For now we use a cyclic distribution of the vertices.
+        short val = i % (P + 1);
+
         for (long j = i; j < NR_VERTICES; ++j) {
             if (matrix[i][j] == 1) {
-                short val = rand() % (P + 1);
 
                 matrix[i][j] = val;
                 matrix[j][i] = val;
@@ -84,6 +97,8 @@ void vertex_partition(short ***M) {
 
 
 int main(int argc, char **argv) {
+    bsp_init(parallel_bfs, argc, argv);
+
     int c;
     long n, sparsity = SPARSITY;
 
@@ -122,13 +137,18 @@ int main(int argc, char **argv) {
         fflush(stdin);
     }
 
+    if (n % P != 0) {
+        printf("Please make sure P divides n.");
+        return 1;
+    }
+
     NR_VERTICES = n;
     SPARSITY = sparsity;
     source = 0;
+    NR_VERTICES_PER_P = NR_VERTICES / P;
     adjacency_matrix = generate_symmetric_matrix();
 
     vertex_partition(&adjacency_matrix);
-
     print_matrix(adjacency_matrix);
 
     if (adjacency_matrix != NULL) {
