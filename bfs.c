@@ -6,11 +6,11 @@
 #include <string.h>
 #include "Node.h"
 
-long NR_VERTICES = 10;
-long NBH_INIT_SIZE = 2;
+long NR_VERTICES = 1000;
+long NBH_INIT_SIZE = 10;
 long SPARSITY = 3;
 
-//struct Node;
+//Node;
 
 void print_matrix(short **matrix) {
     printf("Two Dimensional array elements:\n\n");
@@ -77,7 +77,7 @@ short **fill_buffer(short graph[NR_VERTICES][NR_VERTICES]) {
 }
 
 
-void free_variables(struct Node *first, struct Node *second, struct Node *third, struct Node *fourth) {
+void free_variables(Node *first, Node *second, Node *third, Node *fourth) {
     if (first != NULL) {
         free(first);
     }
@@ -102,12 +102,19 @@ long *bfs_linked(short **adjacency, long source) {
 
     distances[source] = 0;
 
-    struct Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
-    head = (struct Node *) malloc(sizeof(struct Node));
+    Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
+    head = (Node *) malloc(sizeof(Node));
     head->data = source;
 
     for (long level = 1; level < NR_VERTICES; ++level) {
-        struct Node *neighbour_head = NULL, *neighbour = NULL, *next_neighbour = NULL, *node = head;
+        if (head == NULL) {
+            break;
+        }
+
+        Node *node = head;
+        neighbour_head = NULL;
+        next_neighbour = NULL;
+        neighbour = NULL;
 
         while (node != NULL) {
             for (long i = 0; i < NR_VERTICES; ++i) {
@@ -115,14 +122,14 @@ long *bfs_linked(short **adjacency, long source) {
                     distances[i] = level;
 
                     if (neighbour_head == NULL) {
-                        neighbour_head = (struct Node *) malloc(sizeof(struct Node));
+                        neighbour_head = (Node *) malloc(sizeof(Node));
                         neighbour_head->data = i;
                         neighbour = neighbour_head;
 
                         continue;
                     }
 
-                    next_neighbour = (struct Node *) malloc(sizeof(struct Node));
+                    next_neighbour = (Node *) malloc(sizeof(Node));
 
                     next_neighbour->data = i;
                     neighbour->next = next_neighbour;
@@ -172,6 +179,10 @@ long *bfs_vec(short **adjacency, long source) {
     long size_nbh = NBH_INIT_SIZE;
 
     for (long level = 1; level < NR_VERTICES; ++level) {
+        if (neighborhood[0] == -1) {
+            break;
+        }
+
         long counter = 0;
 
         for (long i = 0; neighborhood[i] >= 0; ++i) {

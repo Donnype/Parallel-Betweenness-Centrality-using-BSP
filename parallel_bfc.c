@@ -26,59 +26,124 @@ void parallel_bfs() {
 
     long *distances = malloc(NR_VERTICES_PER_P * sizeof(long));
     memset(distances, -1, NR_VERTICES_PER_P * sizeof(long));
-/*
-    bool *ints = ;
 
-    bool *Ints = calloc(n, sizeof(bool));
-    bsp_push_reg(Ints, n * sizeof(bool));
-    bsp_sync();
+    // We simultaneously read from and build a linked list representing the current and next "layer"
+    // of constant distance respectively.
+    Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
 
-    bsp_put(0, ints, Ints, start_block * sizeof(bool), length * sizeof(bool));
-    bsp_sync();
+    // An array containing the linked lists (i.e. their heads) received from each processor.
+    Node *Heads[P];
 
-    distances[source] = 0;
-
-    struct Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
-    head = (struct Node *) malloc(sizeof(struct Node));
-    head->data = source;
-
-    for (long level = 1; level < NR_VERTICES; ++level) {
-        struct Node *neighbour_head = NULL, *neighbour = NULL, *next_neighbour = NULL, *node = head;
-
-        while (node != NULL) {
-            for (long i = 0; i < NR_VERTICES; ++i) {
-                if (adjacency_matrix[i][node->data] > 0 && distances[i] < 0) {
-                    distances[i] = level;
-
-                    if (neighbour_head == NULL) {
-                        neighbour_head = (struct Node *) malloc(sizeof(struct Node));
-                        neighbour_head->data = i;
-                        neighbour = neighbour_head;
-
-                        continue;
-                    }
-
-                    next_neighbour = (struct Node *) malloc(sizeof(struct Node));
-
-                    next_neighbour->data = i;
-                    neighbour->next = next_neighbour;
-                    neighbour = next_neighbour;
-                }
-            }
-
-            node = node->next;
-        }
-
-        head = neighbour_head;
+    for (int i = 0; i < P; ++i) {
+        Heads[i] = NULL;
     }
 
-    free_variables(head, next_neighbour, neighbour_head, neighbour);
-*/
+    // Set the neighborhood and distance in the processor containing the source.
+    if (current_process_id == source % P) {
+        head = (Node *) malloc(sizeof(Node));
+        head->data = source;
+
+        long index = (source - current_process_id) / P;
+        distances[index] = 0;
+
+        // For convenience we just say that the source vertex was received in the linked list  from processor 0.
+        Heads[0] = head;
+    }
+
+    for (long level = 1; level < NR_VERTICES; ++level) {
+        if (head == NULL) {
+            break;
+        }
+
+        neighbour_head = NULL;
+        next_neighbour = NULL;
+        neighbour = NULL;
+
+        // We loop over the nodes received from each processor, starting with processor 0.
+        for (int proc = 0; proc < P; ++proc) {
+            Node *node = Heads[proc];
+
+            if (node != NULL) {
+                printf("node data is %ld\n", node->data);
+            }
+            /*while (node != NULL) {
+                for (long i = 0; i < NR_VERTICES; ++i) {
+                    if (adjacency_matrix[i][node->data] > 0 && distances[i] < 0) {
+                        distances[i] = level;
+
+                        if (neighbour_head == NULL) {
+                            neighbour_head = (Node *) malloc(sizeof(Node));
+                            neighbour_head->data = i;
+                            neighbour = neighbour_head;
+
+                            continue;
+                        }
+
+                        next_neighbour = (Node *) malloc(sizeof(Node));
+
+                        next_neighbour->data = i;
+                        neighbour->next = next_neighbour;
+                        neighbour = next_neighbour;
+                    }
+                }
+
+                node = node->next;
+            }*/
+        }
+
+//        bsp_sync();
+    }
+
     bsp_end();
+/*
+    printf("Hello from processor %ld \n", current_process_id);
+
+    Node *head = NULL, *next = NULL, *next_next = NULL;
+    head = (Node *) malloc(sizeof(Node));
+    next = (Node *) malloc(sizeof(Node));
+    next_next = (Node *) malloc(sizeof(Node));
+
+    if (current_process_id == 0){
+        head->data = 1;
+        next->data = 2;
+        next_next->data = 3;
+        head->next = next;
+        next->next = next_next;
+    }
+
+    if (current_process_id == 1){
+        head->data = 9;
+        next->data = 8;
+        next_next->data = 7;
+        head->next = next;
+        next->next = next_next;
+    }
+
+    Node *Head = (Node *) malloc(sizeof(Node));
+    bsp_push_reg(Head, sizeof(Node));
+    bsp_sync();
+
+    bsp_put((current_process_id + 1) % P, head, Head, 0, sizeof(Node));
+    bsp_sync();
+
+    printf("Head data from processor %ld: %ld \n", current_process_id, Head->data);
+
+    bsp_sync();
+
+    Node Next = *Head->next;
+    printf("Next data from processor %ld: %ld \n", current_process_id, Next.data);
+
+    bsp_sync();
+
+    Node Next_Next = *Next.next;
+    printf("Head next next data from processor %ld: %ld \n", current_process_id, Next_Next.data);
+    bsp_end();
+    printf("Size of Node %ld \n", sizeof(Node));
+*/
 }
 
 
-long **vertex_partition(short ***M) {
+void vertex_partition(short ***M) {
     short ** matrix = *M;
 
     for (long i = 0; i < NR_VERTICES; ++i) {
@@ -138,7 +203,7 @@ int main(int argc, char **argv) {
     }
 
     if (n % P != 0) {
-        printf("Please make sure P divides n.");
+        printf("Please make sure P divides n.\n");
         return 1;
     }
 
@@ -150,6 +215,8 @@ int main(int argc, char **argv) {
 
     vertex_partition(&adjacency_matrix);
     print_matrix(adjacency_matrix);
+
+    parallel_bfs();
 
     if (adjacency_matrix != NULL) {
         free(adjacency_matrix);
