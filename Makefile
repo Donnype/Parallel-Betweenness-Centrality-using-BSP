@@ -6,8 +6,8 @@ SCRIPTS = time.c test.c parallel_bfc.c
 all: $(SCRIPTS:%.c=%)
 EXECUTABLES := $(SCRIPTS:%.c=%)
 
-%: %.c bfs.c
-	$(CC) $(CFLAGS) -o $@ $@.c bfs.c $(LFLAGS)
+%: %.c bfs.c Node.C
+	$(CC) $(CFLAGS) -o $@ $@.c bfs.c Node.c $(LFLAGS)
 
 .PHONY: clean
 

@@ -6,11 +6,10 @@
 #include <string.h>
 #include "Node.h"
 
-long NR_VERTICES = 1000;
-long NBH_INIT_SIZE = 10;
+long NR_VERTICES = 10;
+long NBH_INIT_SIZE = 1;
 long SPARSITY = 3;
 
-//Node;
 
 void print_matrix(short **matrix) {
     printf("Two Dimensional array elements:\n\n");
@@ -102,64 +101,33 @@ long *bfs_linked(short **adjacency, long source) {
 
     distances[source] = 0;
 
-    Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
-    head = (Node *) malloc(sizeof(Node));
-    head->data = source;
+    Node *new_stack = NULL;
+    Node *stack = create_node(source);
 
     for (long level = 1; level < NR_VERTICES; ++level) {
-        if (head == NULL) {
+        if (stack == NULL) {
             break;
         }
 
-        Node *node = head;
-        neighbour_head = NULL;
-        next_neighbour = NULL;
-        neighbour = NULL;
+        long vertex = pop(&stack);
 
-        while (node != NULL) {
-            for (long i = 0; i < NR_VERTICES; ++i) {
-                if (adjacency[i][node->data] > 0 && distances[i] < 0) {
-                    distances[i] = level;
+        while (vertex >= 0) {
+            for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
+                if (adjacency[neighbour][vertex] > 0 && distances[neighbour] < 0) {
+                    distances[neighbour] = level;
 
-                    if (neighbour_head == NULL) {
-                        neighbour_head = (Node *) malloc(sizeof(Node));
-                        neighbour_head->data = i;
-                        neighbour = neighbour_head;
-
-                        continue;
-                    }
-
-                    next_neighbour = (Node *) malloc(sizeof(Node));
-
-                    next_neighbour->data = i;
-                    neighbour->next = next_neighbour;
-                    neighbour = next_neighbour;
+                    push(&new_stack, neighbour);
                 }
             }
 
-            node = node->next;
+            vertex = pop(&stack);
         }
 
-        head = neighbour_head;
+        stack = new_stack;
+        new_stack = NULL;
     }
 
-    free_variables(head, next_neighbour, neighbour_head, neighbour);
-
-    if (head != NULL) {
-        free(head);
-    }
-
-    if (next_neighbour != NULL) {
-        free(next_neighbour);
-    }
-
-    if (neighbour_head != NULL) {
-        free(neighbour_head);
-    }
-
-    if (neighbour != NULL) {
-        free(neighbour);
-    }
+    free_variables(stack, NULL, NULL, NULL);
 
     return distances;
 }

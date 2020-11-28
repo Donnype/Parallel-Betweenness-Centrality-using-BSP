@@ -57,6 +57,11 @@ int main(int argc, char **argv) {
         free(distances);
     }
 
+
+    if (distances_2 != NULL) {
+        free(distances_2);
+    }
+
     if (matrix != NULL) {
         free(matrix);
     }
