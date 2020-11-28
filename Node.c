@@ -20,7 +20,8 @@ void push(Node** head, long data) {
 
 
 long pop(Node** stack) {
-    if (*stack == NULL) {
+    printf("stack data is %ld \n", (*stack)->data);
+    if (*stack == NULL || (*stack)->data == -1) {
         return -1;
     }
 
@@ -36,14 +37,14 @@ long pop(Node** stack) {
 
 
 void print_stack(Node* stack) {
-    printf("\n(");
+    printf("(");
     Node* tmp = stack;
 
-    while (tmp != NULL) {
+    while (tmp->data != -1) {
         printf("%ld ", tmp->data);
 
         tmp = tmp->next;
     }
 
-    printf(")\n");
+    printf("%ld)\n", tmp->data);
 }

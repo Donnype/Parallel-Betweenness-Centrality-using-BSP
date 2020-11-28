@@ -2,3 +2,7 @@ bfs
 test
 time
 parallel_bfc
+memory
+debug
+memory.dSYM
+massif.*

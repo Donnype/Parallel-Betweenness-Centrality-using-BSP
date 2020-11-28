@@ -127,8 +127,6 @@ long *bfs_linked(short **adjacency, long source) {
         new_stack = NULL;
     }
 
-    free_variables(stack, NULL, NULL, NULL);
-
     return distances;
 }
 

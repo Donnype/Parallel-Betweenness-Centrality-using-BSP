@@ -6,8 +6,16 @@ SCRIPTS = time.c test.c parallel_bfc.c
 all: $(SCRIPTS:%.c=%)
 EXECUTABLES := $(SCRIPTS:%.c=%)
 
-%: %.c bfs.c Node.C
+%: %.c bfs.c Node.c
 	$(CC) $(CFLAGS) -o $@ $@.c bfs.c Node.c $(LFLAGS)
+
+PARALLEL = parallel_bfc.c bfs.c Node.c
+
+debug: $(PARALLEL)
+	$(CC) $(CFLAGS) --debug -o debug $(PARALLEL) $(LFLAGS)
+
+memory: $(PARALLEL)
+	$(CC) -std=c99 -Wall -o0 -g -o memory $(PARALLEL) $(LFLAGS)
 
 .PHONY: clean
 

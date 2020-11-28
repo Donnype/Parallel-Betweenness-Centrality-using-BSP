@@ -19,6 +19,17 @@ short **adjacency_matrix;
 long source;
 
 
+int all_null(Node* Stacks[P]) {
+    for (int i = 0; i < P; ++i) {
+        if (Stacks[i]->data != -1) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+
 void parallel_bfs() {
     bsp_begin(P);
 
@@ -27,74 +38,59 @@ void parallel_bfs() {
     long *distances = malloc(NR_VERTICES_PER_P * sizeof(long));
     memset(distances, -1, NR_VERTICES_PER_P * sizeof(long));
 
-    // We simultaneously read from and build a linked list representing the current and next "layer"
-    // of constant distance respectively.
-    Node *head = NULL, *next_neighbour = NULL, *neighbour_head = NULL, *neighbour = NULL;
-
     // An array containing the linked lists (i.e. their heads) received from each processor.
-    Node *Heads[P];
+    Node *Stacks[P], *NewStacks[P];
 
     for (int i = 0; i < P; ++i) {
-        Heads[i] = NULL;
+        Stacks[i] = create_node(-1);
+        NewStacks[i] = create_node(-1);
     }
 
     // Set the neighborhood and distance in the processor containing the source.
     if (current_process_id == source % P) {
-        head = (Node *) malloc(sizeof(Node));
-        head->data = source;
-
         long index = (source - current_process_id) / P;
         distances[index] = 0;
 
-        // For convenience we just say that the source vertex was received in the linked list  from processor 0.
-        Heads[0] = head;
+        // For convenience we just say that the source vertex was received in the linked list from processor 0.
+        push(&Stacks[0], source);
     }
 
-    for (long level = 1; level < NR_VERTICES; ++level) {
-        if (head == NULL) {
-            break;
-        }
-
-        neighbour_head = NULL;
-        next_neighbour = NULL;
-        neighbour = NULL;
+    for (long level = 1; level < NR_VERTICES && all_null(Stacks) != 1; ++level) {
 
         // We loop over the nodes received from each processor, starting with processor 0.
         for (int proc = 0; proc < P; ++proc) {
-            Node *node = Heads[proc];
+            long vertex = pop(&Stacks[proc]);
+            long index = (vertex - current_process_id) / P;
+            distances[index] = level;
 
-            if (node != NULL) {
-                printf("node data is %ld\n", node->data);
-            }
-            /*while (node != NULL) {
-                for (long i = 0; i < NR_VERTICES; ++i) {
-                    if (adjacency_matrix[i][node->data] > 0 && distances[i] < 0) {
-                        distances[i] = level;
+            while (vertex >= 0) {
+                for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
+                    if (adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour] < 0) {
+                        short dest_proc = adjacency_matrix[neighbour][vertex] - 1;
 
-                        if (neighbour_head == NULL) {
-                            neighbour_head = (Node *) malloc(sizeof(Node));
-                            neighbour_head->data = i;
-                            neighbour = neighbour_head;
-
-                            continue;
-                        }
-
-                        next_neighbour = (Node *) malloc(sizeof(Node));
-
-                        next_neighbour->data = i;
-                        neighbour->next = next_neighbour;
-                        neighbour = next_neighbour;
+                        push(&NewStacks[dest_proc], neighbour);
                     }
                 }
 
-                node = node->next;
-            }*/
+                vertex = pop(&Stacks[proc]);
+            }
         }
 
-//        bsp_sync();
+        for (int i = 0; i < P; ++i) {
+            bsp_push_reg(Stacks[i], sizeof(Node));
+        }
+
+        bsp_sync();
+
+        for (int i = 0; i < P; ++i) {
+            bsp_put(i, NewStacks[i], Stacks[i], 0, sizeof(Node));
+        }
+
+        bsp_sync();
     }
 
     bsp_end();
+
 /*
     printf("Hello from processor %ld \n", current_process_id);
 
@@ -148,7 +144,7 @@ void vertex_partition(short ***M) {
 
     for (long i = 0; i < NR_VERTICES; ++i) {
         // For now we use a cyclic distribution of the vertices.
-        short val = i % (P + 1);
+        short val = (i % P) + 1;
 
         for (long j = i; j < NR_VERTICES; ++j) {
             if (matrix[i][j] == 1) {
