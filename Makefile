@@ -17,6 +17,9 @@ debug: $(PARALLEL)
 memory: $(PARALLEL)
 	$(CC) -std=c99 -Wall -o0 -g -o memory $(PARALLEL) $(LFLAGS)
 
+profile: $(PARALLEL)
+	$(CC) $(CFLAGS) --profile -o profile $(PARALLEL) $(LFLAGS)
+
 .PHONY: clean
 
 clean:

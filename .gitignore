@@ -4,5 +4,6 @@ time
 parallel_bfc
 memory
 debug
+profile
 memory.dSYM
 massif.*
