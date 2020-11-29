@@ -6,7 +6,7 @@
 #include <string.h>
 #include "Node.h"
 
-long NR_VERTICES = 10;
+long NR_VERTICES = 8400;
 long NBH_INIT_SIZE = 1;
 long SPARSITY = 3;
 

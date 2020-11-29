@@ -8,7 +8,6 @@ Node* create_node(long data) {
 
     if (node) {
         node->data = data;
-        node->next = NULL;
     }
 
 

@@ -7,3 +7,4 @@ debug
 profile
 memory.dSYM
 massif.*
+profile_*
