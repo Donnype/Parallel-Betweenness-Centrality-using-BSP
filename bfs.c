@@ -101,7 +101,7 @@ long *bfs_linked(short **adjacency, long source) {
 
     distances[source] = 0;
 
-    Node *new_stack = NULL;
+    Node *new_stack = create_node(-1);
     Node *stack = create_node(source);
 
     for (long level = 1; level < NR_VERTICES; ++level) {

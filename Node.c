@@ -4,9 +4,13 @@
 
 
 Node* create_node(long data) {
-    Node* node = (struct Node*) malloc(sizeof(struct Node));
-    node->data = data;
-    node->next = NULL;
+    Node* node = (Node*) malloc(sizeof(Node*));
+
+    if (node) {
+        node->data = data;
+        node->next = NULL;
+    }
+
 
     return node;
 }
@@ -22,15 +26,16 @@ void push(Node** head, long data) {
 long pop(Node** stack) {
     Node* head = *stack;
 
-    if (head == NULL || head->data == -1) {
+    if (!head || head->data == -1) {
         return -1;
     }
 
     long data = head->data;
 
-    (*stack) = head->next;
+    *stack = head->next;
 
     if (head != NULL) {
+        head->next = NULL;
         free(head);
     }
 
@@ -49,4 +54,17 @@ void print_stack(Node stack) {
     }
 
     printf("%ld )\n", tmp.data);
+}
+
+
+Node* free_linked(Node** stack) {
+    long tmp = 1;
+
+    while (tmp != -1) {
+        tmp = pop(stack);
+    }
+
+    free(stack);
+
+    return create_node(-1);
 }

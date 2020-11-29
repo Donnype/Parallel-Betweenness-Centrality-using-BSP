@@ -23,4 +23,4 @@ profile: $(PARALLEL)
 .PHONY: clean
 
 clean:
-	rm -f $(EXECUTABLES)
+	rm -f $(EXECUTABLES) debug memory profile

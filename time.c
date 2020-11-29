@@ -6,8 +6,9 @@
 # include "bfs.h"
 
 
-extern long unsigned n;
-extern long P;
+extern long NR_VERTICES;
+extern long NBH_INIT_SIZE;
+extern long SPARSITY;
 
 
 double diff(struct timespec start, struct timespec end) {
@@ -53,32 +54,41 @@ int main(int argc, char **argv) {
     double ms = 0.0;
 
 //    Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":b")) != -1) {
+    while ((c = getopt (argc, argv, ":i:n:s:")) != -1) {
         switch (c){
-            default:
-                printf("BFS linked list vs array: \n\n");
-                printf("fn\tms\n");
-
-                short **matrix = generate_symmetric_matrix();
-
-                for (int i = 0; i < runs; ++i) {
-                    ms += time_bfs_linked(matrix);
-                }
-
-                ms = ms / runs;
-                printf("link\t%f\n", ms);
-                ms = 0.0;
-
-                for (int i = 0; i < runs; ++i) {
-                    ms += time_bfs_vec(matrix);
-                }
-
-                ms = ms / runs;
-                printf("vec\t%f\n", ms);
-
-                free(matrix);
-
-                return 0;
+            case 'i':
+                NBH_INIT_SIZE = strtoul(optarg, NULL, 10);
+                break;
+            case 'n':
+                NR_VERTICES = strtoul(optarg, NULL, 10);
+                break;
+            case 's':
+                SPARSITY = strtoul(optarg, NULL, 10);
+                break;
         }
     }
+
+    printf("BFS linked list vs array: \n\n");
+    printf("fn\tms\n");
+
+    short **matrix = generate_symmetric_matrix();
+
+    for (int i = 0; i < runs; ++i) {
+        ms += time_bfs_linked(matrix);
+    }
+
+    ms = ms / runs;
+    printf("link\t%f\n", ms);
+    ms = 0.0;
+
+    for (int i = 0; i < runs; ++i) {
+        ms += time_bfs_vec(matrix);
+    }
+
+    ms = ms / runs;
+    printf("vec\t%f\n", ms);
+
+    free(matrix);
+
+    return 0;
 }
