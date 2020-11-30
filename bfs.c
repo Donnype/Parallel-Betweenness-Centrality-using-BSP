@@ -7,8 +7,9 @@
 #include "Node.h"
 
 long NR_VERTICES = 8400;
-long NBH_INIT_SIZE = 1;
+long NBH_INIT_SIZE = 10;
 long SPARSITY = 3;
+short **adjacency_matrix;
 
 
 void print_matrix(short **matrix) {
@@ -27,8 +28,8 @@ void print_matrix(short **matrix) {
 }
 
 
-void free_matrix(short*** M, long nr_rows) {
-    short** matrix = *M;
+void free_matrix(short ***M, long nr_rows) {
+    short **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
         if (matrix[i] != NULL) {
@@ -42,8 +43,8 @@ void free_matrix(short*** M, long nr_rows) {
 }
 
 
-void free_matrix_long(long*** M, long nr_rows) {
-    long** matrix = *M;
+void free_matrix_long(long ***M, long nr_rows) {
+    long **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
         if (matrix[i] != NULL) {
@@ -213,44 +214,43 @@ long *bfs_vec(short **adjacency, long source) {
 }
 
 
-
 long double *seq_delta(short **adjacency, long source, long *distances) {
-  long double *deltas = malloc(NR_VERTICES * sizeof(long double));
-  memset(deltas, 0, NR_VERTICES * sizeof(long double));
+    long double *deltas = malloc(NR_VERTICES * sizeof(long double));
+    memset(deltas, 0, NR_VERTICES * sizeof(long double));
 
-  // finding the first vertex with the largest distance
-  long max_vertex = 0;
-  for (long i = 0; i < NR_VERTICES; i++) {
-    if (distances[i] > distances[max_vertex]) {
-      max_vertex = i;
-    }
-  }
+    // finding the first vertex with the largest distance
+    long max_distance = 0;
 
-  // finding the largest distance
-  long max_distance = distances[max_vertex];
-
-  // iterate over the levels, beginning at the back
-  for (long d = max_distance; d > 0; d--) {
-    // for each vertex.
     for (long i = 0; i < NR_VERTICES; i++) {
-      if (distances[i] == d) {
-        // first count the predecessors, then add the right fraction to delta.
-        // TODO: make a list?
-        long counter = 0;
-        for (long j = 0; j < NR_VERTICES; j++) {
-          if (adjacency[i][j] == 1 && distances[j] == distances[i] - 1) {
-            counter++;
-          }
+        if (distances[i] > max_distance) {
+            max_distance = distances[i];
         }
-        // printf(" %ld\t%ld\n", i, counter);
-        for (long j = 0; j < NR_VERTICES; j++) {
-          if (adjacency[i][j] == 1 && distances[j] == distances[i] - 1) {
-            deltas[j] += ((long double) 1 / counter) * (deltas[i] + 1);
-          }
-        }
-      }
     }
-  }
-  return deltas;
+
+    // iterate over the levels, beginning at the back
+    for (long d = max_distance; d > 0; d--) {
+        // for each vertex.
+        for (long i = 0; i < NR_VERTICES; i++) {
+            if (distances[i] == d) {
+                // first count the predecessors, then add the right fraction to delta.
+                // TODO: make a list?
+                long counter = 0;
+                for (long j = 0; j < NR_VERTICES; j++) {
+                    if (adjacency[i][j] == 1 && distances[j] == distances[i] - 1) {
+                        counter++;
+                    }
+                }
+
+                // printf(" %ld\t%ld\n", i, counter);
+                for (long j = 0; j < NR_VERTICES; j++) {
+                    if (adjacency[i][j] == 1 && distances[j] == distances[i] - 1) {
+                        deltas[j] += ((long double) 1 / counter) * (deltas[i] + 1);
+                    }
+                }
+            }
+        }
+    }
+
+    return deltas;
 }
 

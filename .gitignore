@@ -6,6 +6,7 @@ memory
 memory_time
 debug
 profile
+dependency
 memory.dSYM
 massif.*
 profile_*

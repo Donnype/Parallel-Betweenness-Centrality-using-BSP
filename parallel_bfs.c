@@ -15,7 +15,7 @@ extern long NR_VERTICES;
 long MAX_NR_VERTICES_PER_P;
 
 // A matrix representation of the graph, vertex partitioned.
-short **adjacency_matrix;
+extern short **adjacency_matrix;
 long source = 0;
 short output;
 

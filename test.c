@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
 
     */
 
+    NR_VERTICES = 10;
     short graph[10][10] = {
             {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
             {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
 
     short **matrix = fill_buffer(graph);
     long s = 0;
+    long *distances = bfs_vec(matrix, s);
 
 
 //    srand(time(NULL));
@@ -47,21 +49,23 @@ int main(int argc, char **argv) {
     print_matrix(matrix);
 
 
-    long *distances = bfs_linked(matrix, s);
-    long *distances_2 = bfs_vec(matrix, s);
-
-    for (long i = 0; i < NR_VERTICES; ++i) {
-        printf(" %ld\t%ld\n", distances[i], distances_2[i]);
+//    long *distances = bfs_linked(matrix, s);
+//    long *distances_2 = bfs_vec(matrix, s);
+//
+    for (long i = 0; i < 10; ++i) {
+        printf(" %ld", distances[i]);
     }
+
+    printf("\n");
 
     if (distances != NULL) {
         free(distances);
     }
 
 
-    if (distances_2 != NULL) {
-        free(distances_2);
-    }
+//    if (distances_2 != NULL) {
+//        free(distances_2);
+//    }
 
     if (matrix != NULL) {
         free(matrix);
