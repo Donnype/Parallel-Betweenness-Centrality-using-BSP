@@ -62,8 +62,6 @@ long** parallel_bfs_vec() {
         memset(neighbourhood[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
         memset(next_neighbourhoods[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
         memset(distances[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(sigmas[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(next_sigmas[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
 
         done[i] = 0;
 
@@ -79,7 +77,9 @@ long** parallel_bfs_vec() {
 
     // It is convenient to keep track of the distances received by each processor separately.
     long *own_distances = (long *) malloc(MAX_NR_VERTICES_PER_P * sizeof(long));
+    long *own_sigmas = (long *) malloc(MAX_NR_VERTICES_PER_P * sizeof(long));
     memset(own_distances, -1, MAX_NR_VERTICES_PER_P * sizeof(long));
+    memset(own_sigmas, 0, MAX_NR_VERTICES_PER_P * sizeof(long));
 
     if (current_process_id == source % P) {
         // We assume that the source vertex was received from processor 0.
@@ -92,7 +92,6 @@ long** parallel_bfs_vec() {
 
         // We loop over the nodes received from each processor.
         for (int proc = 0; proc < P; ++proc) {
-
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = neighbourhood[proc][index];
                 long frequency = next_sigmas[proc][index];
@@ -106,7 +105,8 @@ long** parallel_bfs_vec() {
 
                 // Keep track of how many shortest paths there are to the vertex.
                 if (own_distance == level - 1) {
-                    sigmas[current_process_id][get_index(vertex)] += frequency;
+                    own_sigmas[get_index(vertex)] += frequency;
+                    continue;
                 }
 
                 // Skip the vertex if we have seen it before.
@@ -116,6 +116,7 @@ long** parallel_bfs_vec() {
 
                 // Keep track of the distances.
                 own_distances[get_index(vertex)] = level - 1;
+                own_sigmas[get_index(vertex)] += frequency;
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
                 for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
@@ -124,13 +125,13 @@ long** parallel_bfs_vec() {
 
                         // We count how many times we send a vertex the first time for the sigmas.
                         if (distances[dest_proc][get_index(neighbour)] == level) {
-                            sigmas[dest_proc][get_index(neighbour)] += sigmas[current_process_id][get_index(vertex)];
+                            sigmas[dest_proc][get_index(neighbour)] += own_sigmas[get_index(vertex)];
 
                             continue;
                         }
 
                         if (distances[dest_proc][get_index(neighbour)] < 0) {
-                            sigmas[dest_proc][get_index(neighbour)] = 1;
+                            sigmas[dest_proc][get_index(neighbour)] = own_sigmas[get_index(vertex)];
                             distances[dest_proc][get_index(neighbour)] = level;
                             next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
 
@@ -183,7 +184,7 @@ long** parallel_bfs_vec() {
     // Distribute the distances of the current processor, that are complete.
     for (int i = 0; i < P; ++i) {
         bsp_put(i, own_distances, distances[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_put(i, sigmas[current_process_id], sigmas[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
+        bsp_put(i, own_sigmas, sigmas[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
     }
 
     bsp_sync();

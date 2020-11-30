@@ -7,6 +7,8 @@ memory_time
 debug
 profile
 dependency
+memory_dep
 memory.dSYM
 massif.*
 profile_*
+*.png
