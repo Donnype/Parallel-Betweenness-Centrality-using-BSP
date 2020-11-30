@@ -90,7 +90,6 @@ long** parallel_bfs_vec() {
     for (long level = 1; level < NR_VERTICES; ++level) {
         memset(counters, 0, P * sizeof(long));
 
-        // We loop over the nodes received from each processor.
         for (int proc = 0; proc < P; ++proc) {
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = neighbourhood[proc][index];
@@ -101,22 +100,32 @@ long** parallel_bfs_vec() {
                     break;
                 }
 
-                long own_distance = own_distances[get_index(vertex)];
-
-                // Keep track of how many shortest paths there are to the vertex.
-                if (own_distance == level - 1) {
-                    own_sigmas[get_index(vertex)] += frequency;
+                if (own_distances[get_index(vertex)] >= 0) {
                     continue;
                 }
 
+                // Collect the number of shortest paths to the vertex.
+                own_sigmas[get_index(vertex)] += frequency;
+            }
+        }
+
+        // We loop over the nodes received from each processor.
+        for (int proc = 0; proc < P; ++proc) {
+            for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
+                long vertex = neighbourhood[proc][index];
+
+                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+                if (vertex < 0) {
+                    break;
+                }
+
                 // Skip the vertex if we have seen it before.
-                if (own_distance >= 0) {
+                if (own_distances[get_index(vertex)] >= 0) {
                     continue;
                 }
 
                 // Keep track of the distances.
                 own_distances[get_index(vertex)] = level - 1;
-                own_sigmas[get_index(vertex)] += frequency;
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
                 for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
