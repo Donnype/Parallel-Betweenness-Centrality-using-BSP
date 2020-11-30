@@ -4,12 +4,17 @@
 # include <math.h>
 #include <unistd.h>
 # include "bfs.h"
+# include "parallel_bfs.h"
 
 
 extern long NR_VERTICES;
 extern long NBH_INIT_SIZE;
+extern long MAX_NR_VERTICES_PER_P;
 extern long SPARSITY;
+extern long P;
+extern short output;
 
+extern short **adjacency_matrix;
 
 double diff(struct timespec start, struct timespec end) {
     long seconds = end.tv_sec - start.tv_sec;
@@ -43,18 +48,39 @@ double time_bfs_vec(short **matrix) {
 
     clock_gettime(CLOCK_REALTIME, &end);
 
+    if (output) {
+        for (int i = 0; i < NR_VERTICES; ++i) {
+            printf("%ld ", d[i]);
+        }
+
+        printf("\n");
+    }
+
     free(d);
 
     return diff(start, end);
 }
 
 
+double time_bfs_vec_parallel(int argc, char **argv) {
+    struct timespec start, end;
+
+    clock_gettime(CLOCK_REALTIME, &start);
+
+    parallel_wrap(argc, argv);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    return diff(start, end);
+}
+
+
 int main(int argc, char **argv) {
-    int c, runs = 5.0;
+    int c, runs = 5.0, mat = 0, test = 0;
     double ms = 0.0;
 
 //    Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":i:n:s:")) != -1) {
+    while ((c = getopt (argc, argv, ":i:n:s:p:o:m:t:")) != -1) {
         switch (c){
             case 'i':
                 NBH_INIT_SIZE = strtoul(optarg, NULL, 10);
@@ -65,30 +91,75 @@ int main(int argc, char **argv) {
             case 's':
                 SPARSITY = strtoul(optarg, NULL, 10);
                 break;
+            case 'p':
+                P = strtol(optarg, NULL, 10);
+                break;
+            case 'o':
+                output = 1;
+                break;
+            case 'm':
+                mat = 1;
+                break;
+            case 't':
+                test = 1;
+                break;
         }
     }
 
-    printf("BFS linked list vs array: \n\n");
-    printf("fn\tms\n");
 
-    short **matrix = generate_symmetric_matrix();
+//    printf("BFS linked list vs array: \n\n");
+//    printf("BFS seq vs parallel: \n\n");
+//    printf("fn\tms\n");
+    printf("BFS parallel: \n\n");
+    printf("p\tms\n");
 
-    for (int i = 0; i < runs; ++i) {
-        ms += time_bfs_linked(matrix);
+    if (test == 1) {
+        NR_VERTICES = 10;
+
+        short graph[10][10] = {
+                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
+                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
+                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
+                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
+                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
+                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
+                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
+        };
+
+        adjacency_matrix = fill_buffer(graph);
+    } else {
+        adjacency_matrix = generate_symmetric_matrix();
     }
 
-    ms = ms / runs;
-    printf("link\t%f\n", ms);
-    ms = 0.0;
+    if (mat == 1) {
+        print_matrix(adjacency_matrix);
+    }
+//
+//    for (int i = 0; i < runs; ++i) {
+//        ms += time_bfs_vec(adjacency_matrix);
+//    }
+//
+//    ms = ms / runs;
+//    printf("Seq\t%f\n", ms);
+//    ms = 0.0;
 
-    for (int i = 0; i < runs; ++i) {
-        ms += time_bfs_vec(matrix);
+    for (P = 1; P < 9; ++P) {
+        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+
+        for (int i = 0; i < runs; ++i) {
+            ms += time_bfs_vec_parallel(argc, argv);
+        }
+
+        ms = ms / runs;
+        printf("%ld\t%f\n", P, ms);
+        ms = 0.0;
     }
 
-    ms = ms / runs;
-    printf("vec\t%f\n", ms);
 
-    free(matrix);
+    free_matrix(&adjacency_matrix, NR_VERTICES);
 
     return 0;
 }

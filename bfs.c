@@ -27,10 +27,33 @@ void print_matrix(short **matrix) {
 }
 
 
-void swap(long** a, long** b) {
-    long* temp = *a;
-    *a = *b;
-    *b = temp;
+void free_matrix(short*** M, long nr_rows) {
+    short** matrix = *M;
+
+    for (int i = 0; i < nr_rows; ++i) {
+        if (matrix[i] != NULL) {
+            free(matrix[i]);
+        }
+    }
+
+    if (matrix != NULL) {
+        free(matrix);
+    }
+}
+
+
+void free_matrix_long(long*** M, long nr_rows) {
+    long** matrix = *M;
+
+    for (int i = 0; i < nr_rows; ++i) {
+        if (matrix[i] != NULL) {
+            free(matrix[i]);
+        }
+    }
+
+    if (matrix != NULL) {
+        free(matrix);
+    }
 }
 
 
@@ -102,14 +125,15 @@ long *bfs_linked(short **adjacency, long source) {
     distances[source] = 0;
 
     Node *new_stack = create_node(-1);
-    Node *stack = create_node(source);
+    Node *stack = create_node(-1);
+    push(&stack, source);
 
     for (long level = 1; level < NR_VERTICES; ++level) {
-        if (stack == NULL) {
+        long vertex = pop(&stack);
+
+        if (vertex == -1) {
             break;
         }
-
-        long vertex = pop(&stack);
 
         while (vertex >= 0) {
             for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
@@ -123,9 +147,13 @@ long *bfs_linked(short **adjacency, long source) {
             vertex = pop(&stack);
         }
 
-        stack = new_stack;
-        new_stack = NULL;
+//        *stack = *new_stack;
+//        Node tmp = *new_stack;
+        *stack = *new_stack;
+        new_stack = free_linked(&new_stack);
     }
+
+    free_linked(&stack);
 
     return distances;
 }

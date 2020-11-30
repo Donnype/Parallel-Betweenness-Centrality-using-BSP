@@ -16,8 +16,8 @@ long MAX_NR_VERTICES_PER_P;
 
 // A matrix representation of the graph, vertex partitioned.
 short **adjacency_matrix;
-long source;
-short output = 0;
+long source = 0;
+short output;
 
 
 short all_null(Node* Stacks[P]) {
@@ -41,35 +41,6 @@ short all_null_vec(long vec[P]) {
     return 1;
 }
 
-
-void free_matrix(short*** M, long nr_rows) {
-    short** matrix = *M;
-
-    for (int i = 0; i < nr_rows; ++i) {
-        if (matrix[i] != NULL) {
-            free(matrix[i]);
-        }
-    }
-
-    if (matrix != NULL) {
-        free(matrix);
-    }
-}
-
-
-void free_matrix_long(long*** M, long nr_rows) {
-    long** matrix = *M;
-
-    for (int i = 0; i < nr_rows; ++i) {
-        if (matrix[i] != NULL) {
-            free(matrix[i]);
-        }
-    }
-
-    if (matrix != NULL) {
-        free(matrix);
-    }
-}
 
 
 long get_index(long vertex) {
@@ -117,7 +88,7 @@ void parallel_bfs_linked() {
                 for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
                     if (adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour] < 0) {
                         distances[neighbour] = level;
-                        short dest_proc = adjacency_matrix[neighbour][vertex] - 1;
+                        short dest_proc = neighbour % P;
 
                         push(&NewStacks[dest_proc], neighbour);
                     }
@@ -254,7 +225,7 @@ void parallel_bfs_vec() {
                 for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
                     if (adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour % P][get_index(neighbour)] < 0) {
                         distances[neighbour % P][get_index(neighbour)] = level;
-                        short dest_proc = adjacency_matrix[neighbour][vertex] - 1;
+                        short dest_proc = neighbour % P;
 
                         next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
 
@@ -339,15 +310,23 @@ void vertex_partition(short ***M) {
 }
 
 
+void parallel_wrap(int argc, char **argv) {
+    bsp_init(parallel_bfs_vec, argc, argv);
+
+    parallel_bfs_vec();
+}
+
+
+/*
 int main(int argc, char **argv) {
     bsp_init(parallel_bfs_vec, argc, argv);
 
-    int c, mat = 0;
+    int c, mat = 0, test = 0;
     long n, sparsity = SPARSITY;
 
     // Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":p:n:s:o:m:")) != -1) {
-        switch (c){
+    while ((c = getopt(argc, argv, ":p:n:s:o:m:t:")) != -1) {
+        switch (c) {
             case 'p':
                 P = strtol(optarg, NULL, 10);
                 break;
@@ -363,6 +342,9 @@ int main(int argc, char **argv) {
             case 'm':
                 mat = 1;
                 break;
+            case 't':
+                test = 1;
+                break;
         }
     }
 
@@ -370,9 +352,9 @@ int main(int argc, char **argv) {
     if (!P) {
         printf("How many processors do you want to use?\n");
         fflush(stdout);
-        scanf("%ld",&P);
+        scanf("%ld", &P);
 
-        if (P > bsp_nprocs()){
+        if (P > bsp_nprocs()) {
             printf("Sorry, only %u processors available.\n",
                    bsp_nprocs());
             fflush(stdout);
@@ -391,22 +373,27 @@ int main(int argc, char **argv) {
     source = 0;
     MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
 
-//    short graph[10][10] = {
-//            {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-//            {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
-//            {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
-//            {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-//            {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
-//            {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-//            {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-//            {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
-//            {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
-//            {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
-//    };
-//
-//    adjacency_matrix = fill_buffer(graph);
 
-    adjacency_matrix = generate_symmetric_matrix();
+    if (test == 1) {
+        NR_VERTICES = 10;
+
+        short graph[10][10] = {
+                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
+                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
+                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
+                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
+                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
+                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
+                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
+        };
+
+        adjacency_matrix = fill_buffer(graph);
+    } else {
+        adjacency_matrix = generate_symmetric_matrix();
+    }
 
     vertex_partition(&adjacency_matrix);
 
@@ -418,3 +405,4 @@ int main(int argc, char **argv) {
 
     free_matrix(&adjacency_matrix, NR_VERTICES);
 }
+*/

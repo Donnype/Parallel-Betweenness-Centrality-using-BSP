@@ -3,6 +3,7 @@ test
 time
 parallel_bfc
 memory
+memory_time
 debug
 profile
 memory.dSYM

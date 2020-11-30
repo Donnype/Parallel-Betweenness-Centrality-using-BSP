@@ -4,12 +4,9 @@
 
 
 Node* create_node(long data) {
-    Node* node = (Node*) malloc(sizeof(Node*));
-
-    if (node) {
-        node->data = data;
-    }
-
+    Node* node = (Node*) malloc(sizeof(Node));
+    node->data = data;
+    node->next = NULL;
 
     return node;
 }
@@ -17,7 +14,10 @@ Node* create_node(long data) {
 
 void push(Node** head, long data) {
     Node* node = create_node(data);
+
+    node->data = data;
     node->next = *head;
+
     *head = node;
 }
 
