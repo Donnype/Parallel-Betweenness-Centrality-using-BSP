@@ -13,9 +13,12 @@ extern long SPARSITY;
 extern long P;
 short output = 0;
 
-
 extern short **adjacency_matrix;
 extern long source;
+
+long **all_sigmas;
+long double **all_deltas;
+
 
 long*** parallel_bfs() {
     bsp_begin(P);
@@ -381,6 +384,9 @@ void parallel_betweenness() {
 
     bsp_end();
 
+    all_sigmas = sigmas;
+    all_deltas = deltas;
+
     long double total = 0.0;
 
     for (int i = 0; i < P; ++i) {
@@ -417,8 +423,7 @@ void parallel_betweenness() {
     }
 
     free_matrix_long(&distances, P);
-    free_matrix_double(&deltas, P);
-    free_matrix_long(&sigmas, P);
+
     free(values);
     free(totals);
 }

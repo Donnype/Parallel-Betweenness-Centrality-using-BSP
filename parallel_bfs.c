@@ -18,6 +18,7 @@ long MAX_NR_VERTICES_PER_P;
 extern short **adjacency_matrix;
 long source = 0;
 short output;
+long **all_distances;
 
 
 short all_null(Node* Stacks[P]) {
@@ -153,7 +154,6 @@ void parallel_bfs_linked() {
     }
 //    bsp_sync();
 
-    free(distances);
     bsp_end();
 }
 
@@ -248,12 +248,6 @@ void parallel_bfs_vec() {
 
             // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
             bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
-
-            // If we want to aggregate the distances over all processors, this is a way to do it.
-            if (output) {
-                bsp_put(i, own_distances, distances[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
-            }
-
             bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(short));
         }
 
@@ -273,6 +267,14 @@ void parallel_bfs_vec() {
         }
     }
 
+
+    // Distribute the distances of the current processor, that are complete.
+    for (int i = 0; i < P; ++i) {
+        bsp_put(i, own_distances, distances[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
+    }
+
+    bsp_sync();
+
     // Depending on a CLI argument, print the distances found in processor 0.
     if (output && current_process_id == 0) {
         for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
@@ -285,11 +287,12 @@ void parallel_bfs_vec() {
 
 
     // Free the variables.
-    free(distances);
     free_matrix_long(&neighbourhood, P);
     free_matrix_long(&next_neighbourhoods, P);
 
     bsp_end();
+
+    all_distances = distances;
 }
 
 
