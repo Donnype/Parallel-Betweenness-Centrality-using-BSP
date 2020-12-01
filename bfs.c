@@ -10,6 +10,7 @@ long NR_VERTICES = 8400;
 long NBH_INIT_SIZE = 10;
 long SPARSITY = 3;
 short **adjacency_matrix;
+long P = 1;
 
 
 void print_matrix(short **matrix) {

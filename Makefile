@@ -8,10 +8,13 @@ EXECUTABLES := $(SCRIPTS:%.c=%)
 
 
 dependency: dependency.c bfs.c Node.c
-	$(CC) $(CFLAGS) -o $@ dependency.c bfs.c Node.c $(LFLAGS)
+	$(CC) $(CFLAGS) -o $@ dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
 
-%: %.c parallel_bfs.c bfs.c Node.c
-	$(CC) $(CFLAGS) -o $@ $@.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+# %: %.c parallel_bfs.c bfs.c Node.c
+# 	$(CC) $(CFLAGS) -o $@ $@.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+
+time: time.c dependency.c parallel_bfs.c bfs.c Node.c
+	$(CC) $(CFLAGS) -o time time.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
 
 PARALLEL = parallel_bfs.c bfs.c Node.c
 
@@ -22,7 +25,7 @@ memory: $(PARALLEL)
 	$(CC) -std=c99 -Wall -o0 -g -o memory $(PARALLEL) $(LFLAGS)
 
 memory_time: time.c bfs.c Node.c
-	$(CC) -std=c99 -Wall -o0 -g -o memory_time time.c bfs.c Node.c $(LFLAGS)
+	$(CC) -std=c99 -Wall -o0 -g -o memory_time time.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
 
 memory_dep: dependency.c bfs.c Node.c
 	$(CC) -std=c99 -Wall -o0 -g -o memory_dep dependency.c bfs.c Node.c $(LFLAGS)

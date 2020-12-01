@@ -4,37 +4,20 @@
 #include <string.h>
 #include <unistd.h>
 #include "bfs.h"
+#include "parallel_bfs.h"
 
 
 extern long NR_VERTICES;
 long MAX_NR_VERTICES_PER_P;
 extern long SPARSITY;
-long P = 1;
+extern long P;
 short output = 0;
 
+
 extern short **adjacency_matrix;
-long source = 0;
+extern long source;
 
-
-short all_null_vec(long vec[P]) {
-    for (int i = 0; i < P; ++i) {
-        if (vec[i] != 0) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-
-long get_index(long vertex) {
-    long offset = vertex % P;
-
-    return (vertex - offset) / P;
-}
-
-
-long*** parallel_bfs_vec() {
+long*** parallel_bfs() {
     bsp_begin(P);
 
     long current_process_id = bsp_pid();
@@ -372,10 +355,10 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 }
 
 
-void parallel_betweenness_wrap() {
+void parallel_betweenness() {
     bsp_begin(P);
 
-    long*** values = parallel_bfs_vec();
+    long*** values = parallel_bfs();
     long** distances = values[0];
     long** sigmas = values[1];
     long double **deltas = parallel_dependency(distances, sigmas);
@@ -440,9 +423,15 @@ void parallel_betweenness_wrap() {
     free(totals);
 }
 
+void parallel_betweenness_wrap(int argc, char **argv) {
+    bsp_init(parallel_betweenness, argc, argv);
 
+    parallel_betweenness();
+}
+
+/*
 int main(int argc, char **argv) {
-    bsp_init(parallel_betweenness_wrap, argc, argv);
+    bsp_init(parallel_betweenness, argc, argv);
 
     int c, mat = 0, test = 0;
 
@@ -473,29 +462,29 @@ int main(int argc, char **argv) {
     if (test == 1) {
         NR_VERTICES = 10;
 
-//        short graph[10][10] = {
-//                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-//                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
-//                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
-//                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-//                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
-//                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-//                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-//                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
-//                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
-//                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
-//        };
-        NR_VERTICES = 7;
-
-        short graph[7][7] = {
-                {0, 1, 1, 1, 0, 0, 0},
-                {1, 0, 0, 0, 1, 0, 0},
-                {1, 0, 0, 0, 0, 1, 0},
-                {1, 0, 0, 0, 0, 1, 0},
-                {0, 1, 0, 0, 0, 0, 1},
-                {0, 0, 1, 1, 0, 0, 1},
-                {0, 0, 0, 0, 1, 1, 0},
+        short graph[10][10] = {
+                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
+                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
+                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
+                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
+                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
+                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
+                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
         };
+//        NR_VERTICES = 7;
+//
+//        short graph[7][7] = {
+//                {0, 1, 1, 1, 0, 0, 0},
+//                {1, 0, 0, 0, 1, 0, 0},
+//                {1, 0, 0, 0, 0, 1, 0},
+//                {1, 0, 0, 0, 0, 1, 0},
+//                {0, 1, 0, 0, 0, 0, 1},
+//                {0, 0, 1, 1, 0, 0, 1},
+//                {0, 0, 0, 0, 1, 1, 0},
+//        };
 
         adjacency_matrix = fill_buffer(graph);
     } else {
@@ -515,7 +504,7 @@ int main(int argc, char **argv) {
 //    }
     printf("\n");
 
-    parallel_betweenness_wrap();
+    parallel_betweenness();
 
 //    for (long i = 0; i < NR_VERTICES; ++i) {
 //        printf(" %Lf", all_deltas[i]);
@@ -525,4 +514,4 @@ int main(int argc, char **argv) {
     free_matrix(&adjacency_matrix, NR_VERTICES);
 
     return 0;
-}
+}*/

@@ -9,7 +9,7 @@
 
 
 // Number of processors requested.
-long P;
+extern long P;
 
 extern long NR_VERTICES;
 long MAX_NR_VERTICES_PER_P;

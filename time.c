@@ -5,6 +5,7 @@
 #include <unistd.h>
 # include "bfs.h"
 # include "parallel_bfs.h"
+# include "dependency.h"
 
 
 extern long NR_VERTICES;
@@ -80,7 +81,7 @@ double time_betweenness_parallel(int argc, char **argv) {
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    parallel_wrap(argc, argv);
+    parallel_betweenness_wrap(argc, argv);
 
     clock_gettime(CLOCK_REALTIME, &end);
 
@@ -88,13 +89,63 @@ double time_betweenness_parallel(int argc, char **argv) {
 }
 
 
+int bfs(int argc, char **argv) {
+    double ms = 0.0, runs = 5.0;
+//    printf("BFS linked list vs array: \n\n");
+//    printf("BFS seq vs parallel: \n\n");
+//    printf("fn\tms\n");
+    printf("BFS parallel: \n\n");
+    printf("p\tms\n");
+
+    for (P = 1; P < 9; ++P) {
+        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+
+        for (int i = 0; i < runs; ++i) {
+            ms += time_bfs_vec_parallel(argc, argv);
+        }
+
+        ms = ms / runs;
+        printf("%ld\t%f\n", P, ms);
+        ms = 0.0;
+    }
+
+
+    free_matrix(&adjacency_matrix, NR_VERTICES);
+
+    return 0;
+}
+
+
+int betweenness(int argc, char **argv) {
+    double ms = 0.0, runs = 5.0;
+    printf("Betweenness parallel: \n\n");
+    printf("p\tms\n");
+
+    for (P = 1; P < 9; P++) {
+        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+
+        for (int i = 0; i < runs; ++i) {
+            ms += time_betweenness_parallel(argc, argv);
+        }
+
+        ms = ms / runs;
+        printf("%ld\t%f\n", P, ms);
+        ms = 0.0;
+    }
+
+
+    free_matrix(&adjacency_matrix, NR_VERTICES);
+
+    return 0;
+}
+
+
 int main(int argc, char **argv) {
-    int c, runs = 5.0, mat = 0, test = 0;
-    double ms = 0.0;
+    int c, mat = 0, test = 0;
 
 //    Scan the optional CLI arguments using getopt.
-    while ((c = getopt (argc, argv, ":i:n:s:p:o:m:t:")) != -1) {
-        switch (c){
+    while ((c = getopt(argc, argv, ":i:n:s:p:o:m:t:")) != -1) {
+        switch (c) {
             case 'i':
                 NBH_INIT_SIZE = strtoul(optarg, NULL, 10);
                 break;
@@ -120,12 +171,6 @@ int main(int argc, char **argv) {
     }
 
 
-//    printf("BFS linked list vs array: \n\n");
-//    printf("BFS seq vs parallel: \n\n");
-//    printf("fn\tms\n");
-    printf("BFS parallel: \n\n");
-    printf("p\tms\n");
-
     if (test == 1) {
         NR_VERTICES = 10;
 
@@ -150,29 +195,8 @@ int main(int argc, char **argv) {
     if (mat == 1) {
         print_matrix(adjacency_matrix);
     }
-//
-//    for (int i = 0; i < runs; ++i) {
-//        ms += time_bfs_vec(adjacency_matrix);
-//    }
-//
-//    ms = ms / runs;
-//    printf("Seq\t%f\n", ms);
-//    ms = 0.0;
 
-    for (P = 1; P < 9; ++P) {
-        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+//    return bfs(argc, argv);
+    return betweenness(argc, argv);
 
-        for (int i = 0; i < runs; ++i) {
-            ms += time_bfs_vec_parallel(argc, argv);
-        }
-
-        ms = ms / runs;
-        printf("%ld\t%f\n", P, ms);
-        ms = 0.0;
-    }
-
-
-    free_matrix(&adjacency_matrix, NR_VERTICES);
-
-    return 0;
 }
