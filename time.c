@@ -89,11 +89,28 @@ double time_betweenness_parallel(int argc, char **argv) {
 }
 
 
+int seq_bfs() {
+    double ms = 0.0, runs = 5.0;
+
+    printf("BFS sequential: \n\n");
+    printf("ms\n");
+
+    for (int i = 0; i < runs; ++i) {
+        ms += time_bfs_vec(adjacency_matrix);
+    }
+
+    ms = ms / runs;
+    printf("%f\n", ms);
+
+    free_matrix(&adjacency_matrix, NR_VERTICES);
+
+    return 0;
+}
+
+
 int bfs(int argc, char **argv) {
     double ms = 0.0, runs = 5.0;
-//    printf("BFS linked list vs array: \n\n");
-//    printf("BFS seq vs parallel: \n\n");
-//    printf("fn\tms\n");
+
     printf("BFS parallel: \n\n");
     printf("p\tms\n");
 
@@ -196,7 +213,8 @@ int main(int argc, char **argv) {
         print_matrix(adjacency_matrix);
     }
 
-//    return bfs(argc, argv);
-    return betweenness(argc, argv);
+    return bfs(argc, argv);
+//    return seq_bfs();
+//    return betweenness(argc, argv);
 
 }

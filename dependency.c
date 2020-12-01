@@ -359,6 +359,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     free_matrix_long(&next_layer, P);
     free_matrix_double(&next_deltas, P);
     free(own_deltas);
+    free(own_checked);
 
     return deltas;
 }
