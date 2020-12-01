@@ -14,6 +14,7 @@ short **fill_buffer(short graph[NR_VERTICES][NR_VERTICES]);
 void free_variables(struct Node *first, struct Node *second, struct Node *third, struct Node *fourth);
 void free_matrix(short*** M, long nr_rows);
 void free_matrix_long(long*** M, long nr_rows);
+void free_matrix_double(long double*** M, long nr_rows);
 void print_matrix(short **matrix);
 
 #endif

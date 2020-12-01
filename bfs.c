@@ -58,6 +58,21 @@ void free_matrix_long(long ***M, long nr_rows) {
 }
 
 
+void free_matrix_double(long double ***M, long nr_rows) {
+    long double **matrix = *M;
+
+    for (int i = 0; i < nr_rows; ++i) {
+        if (matrix[i] != NULL) {
+            free(matrix[i]);
+        }
+    }
+
+    if (matrix != NULL) {
+        free(matrix);
+    }
+}
+
+
 short **generate_symmetric_matrix() {
     srand(time(NULL));
     short **matrix = (short **) malloc(NR_VERTICES * sizeof(short *));

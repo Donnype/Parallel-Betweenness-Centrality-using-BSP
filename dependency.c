@@ -13,8 +13,6 @@ long P = 1;
 short output = 0;
 
 extern short **adjacency_matrix;
-long double *all_deltas;
-long **all_distances;
 long source = 0;
 
 
@@ -36,7 +34,7 @@ long get_index(long vertex) {
 }
 
 
-long** parallel_bfs_vec() {
+long*** parallel_bfs_vec() {
     bsp_begin(P);
 
     long current_process_id = bsp_pid();
@@ -203,75 +201,111 @@ long** parallel_bfs_vec() {
     free_matrix_long(&neighbourhood, P);
     free_matrix_long(&next_neighbourhoods, P);
 
-//    return distances;
-    return sigmas;
+    long*** values = malloc(2 * sizeof(long**));
+
+    values[0] = distances;
+    values[1] = sigmas;
+
+    return values;
 }
 
 
-void parallel_dependency() {
-    bsp_begin(P);
-
+long double** parallel_dependency(long **distances, long **sigmas) {
     long current_process_id = bsp_pid();
 
-    long double *deltas = malloc(NR_VERTICES * sizeof(long double));
-    memset(deltas, 0, NR_VERTICES * sizeof(long double));
+    long double **deltas = (long double **) malloc(P * sizeof(long double*));
+    long **next_neighbourhoods = (long **) malloc(P * sizeof(long *));
+
+    for (int i = 0; i < P; ++i) {
+        deltas[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+    }
 
     // finding the first vertex with the largest distance
     long max_distance = 0;
 
-    for (long i = 0; i < NR_VERTICES; i++) {
-        if (all_distances[i] > max_distance) {
-            max_distance = all_distances[i];
+    for (int i = 0; i < P; ++i) {
+        for (long j = 0; j < MAX_NR_VERTICES_PER_P; j++) {
+            if (distances[i][j] > max_distance) {
+                max_distance = distances[i][j];
+            }
         }
     }
 
     // iterate over the levels, beginning at the back
     for (long d = max_distance; d > 0; d--) {
-        // for each vertex.
-        for (long i = 0; i < NR_VERTICES; i++) {
-            if (all_distances[i] == d) {
-                // first count the predecessors, then add the right fraction to delta.
-                // TODO: make a list?
-                long counter = 0;
-                for (long j = 0; j < NR_VERTICES; j++) {
-                    if (adjacency_matrix[j][i] > 0 && all_distances[j] == all_distances[i] - 1) {
-                        counter++;
-                    }
-                }
 
-                // printf(" %ld\t%ld\n", i, counter);
-                for (long j = 0; j < NR_VERTICES; j++) {
-                    if (adjacency_matrix[j][i] > 0 && all_distances[j] == all_distances[i] - 1) {
-                        deltas[j] += ((long double) 1 / counter) * (deltas[i] + 1);
+
+
+        // for each vertex.
+        for (long i = 0; i < MAX_NR_VERTICES_PER_P; i++) {
+            if (distances[current_process_id][i] == d) {
+                long idx = i * P + current_process_id;
+                printf("%hd ", adjacency_matrix[0][1]);
+
+                for (int proc = 0; proc < P; ++proc) {
+                    for (long j = 0; j < MAX_NR_VERTICES_PER_P; j++) {
+                        long jdx = j * P + proc;
+                        printf(" d - 1 is %ld ", d - 1);
+
+                        if (adjacency_matrix[jdx][idx] > 0 && distances[proc][j] == d - 1) {
+                            long dest_proc = j % P;
+                            long double frac = (long double) sigmas[dest_proc][j] / sigmas[current_process_id][i];
+
+                            deltas[dest_proc][j] += frac * (deltas[current_process_id][i] + 1);
+                        }
                     }
                 }
             }
         }
     }
 
-    bsp_end();
+    deltas[source % P][get_index(source)] = 0.0;
 
-    all_deltas = deltas;
+    return deltas;
 }
 
 
 void parallel_wrap() {
     bsp_begin(P);
 
-    long** distances = parallel_bfs_vec();
+    long*** values = parallel_bfs_vec();
+    long** distances = values[0];
+    long** sigmas = values[1];
+    long double **deltas = parallel_dependency(distances, sigmas);
 
     bsp_end();
 
     if (output) {
+        printf("distances \n");
+
         for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
             for (int j = 0; j < P; ++j) {
                 printf("%ld ", distances[j][i]);
             }
         }
         printf("\n");
+        printf("sigmas \n");
+        for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+            for (int j = 0; j < P; ++j) {
+                printf("%ld ", sigmas[j][i]);
+            }
+        }
+        printf("\n");
+
+        printf("deltas \n");
+
+        for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+            for (int j = 0; j < P; ++j) {
+                printf("%Lf ", deltas[j][i]);
+            }
+        }
+        printf("\n");
     }
 
-    free(distances);
+    free_matrix_long(&distances, P);
+    free_matrix_double(&deltas, P);
+    free_matrix_long(&sigmas, P);
+    free(values);
 }
 
 
@@ -305,8 +339,8 @@ int main(int argc, char **argv) {
     }
 
     if (test == 1) {
-//        NR_VERTICES = 10;
-//
+        NR_VERTICES = 10;
+
 //        short graph[10][10] = {
 //                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
 //                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
@@ -345,7 +379,7 @@ int main(int argc, char **argv) {
 //    distances = bfs_vec(adjacency_matrix, source);
 
 //    for (long i = 0; i < NR_VERTICES; ++i) {
-//        printf(" %ld", all_distances[i]);
+//        printf(" %ld", distances[i]);
 //    }
     printf("\n");
 
