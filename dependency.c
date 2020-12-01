@@ -245,9 +245,9 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     }
 
     long double* own_deltas = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+    short* own_checked = (short *) calloc(MAX_NR_VERTICES_PER_P, sizeof(short));
 
     // The processor identifies its vertices with the longest distance.
-
     counters[current_process_id] = 0;
 
     for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
@@ -263,7 +263,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     for (long d = max_distance; d > 0; d--) {
         memset(counters, 0, P * sizeof(long));
 
-        for (int proc = 0; proc < P; ++proc) {
+        for (long proc = 0; proc < P; ++proc) {
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = layer[proc][index];
                 long double delta_part = next_deltas[proc][index];
@@ -278,7 +278,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
             }
         }
 
-        for (int proc = 0; proc < P; ++proc) {
+        for (long proc = 0; proc < P; ++proc) {
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = layer[proc][index];
 
@@ -286,6 +286,13 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                 if (vertex < 0) {
                     break;
                 }
+
+                // Don't fill the predecessors more than once.
+                if (own_checked[get_index(vertex)] == 1) {
+                    continue;
+                }
+
+                own_checked[get_index(vertex)] = 1;
 
                 for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
                     short dest_proc = neighbour % P;
@@ -299,7 +306,6 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                         long double enumerator = (long double) sigmas[dest_proc][get_index(neighbour)];
                         long double denominator = (long double) sigmas[current_process_id][get_index(vertex)];
                         long double frac = enumerator / denominator;
-
                         deltas[dest_proc][get_index(neighbour)] += frac * (own_deltas[get_index(vertex)] + 1);
                     }
                 }

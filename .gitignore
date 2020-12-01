@@ -8,6 +8,7 @@ debug
 profile
 dependency
 memory_dep
+memory_test
 memory.dSYM
 massif.*
 profile_*
