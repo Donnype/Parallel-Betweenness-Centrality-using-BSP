@@ -161,7 +161,7 @@ long*** parallel_bfs_vec() {
             }
 
             // Append the vectors with -1 to denote the end if they are smaller than the maximum size.
-            if (counters[i] + 1 < MAX_NR_VERTICES_PER_P) {
+            if (counters[i] < MAX_NR_VERTICES_PER_P) {
                 next_neighbourhoods[i][counters[i]] = -1;
                 counters[i]++;
             }
@@ -208,6 +208,9 @@ long*** parallel_bfs_vec() {
     // Free the variables.
     free_matrix_long(&neighbourhood, P);
     free_matrix_long(&next_neighbourhoods, P);
+    free_matrix_long(&next_sigmas, P);
+    free(own_distances);
+    free(own_sigmas);
 
 
     long*** values = malloc(2 * sizeof(long**));
@@ -307,13 +310,15 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                             counters[dest_proc]++;
                         }
 
-                        long double frac = (long double) sigmas[dest_proc][neighbour] / sigmas[current_process_id][vertex];
-                        deltas[dest_proc][get_index(neighbour)] += frac * (deltas[current_process_id][vertex] + 1);
+                        long double enumerator = (long double) sigmas[dest_proc][get_index(neighbour)];
+                        long double denominator = (long double) sigmas[current_process_id][get_index(vertex)];
+                        long double frac = enumerator / denominator;
+
+                        deltas[dest_proc][get_index(neighbour)] += frac * (own_deltas[get_index(vertex)] + 1);
                     }
                 }
             }
         }
-
 
         // Communication of the next layer.
         for (int i = 0; i < P; ++i) {
@@ -324,8 +329,8 @@ long double** parallel_dependency(long **distances, long **sigmas) {
             }
 
             // Append the vectors with -1 to denote the end if they are smaller than the maximum size.
-            if (counters[i] + 1 < MAX_NR_VERTICES_PER_P) {
-                next_deltas[i][counters[i]] = -1;
+            if (counters[i] < MAX_NR_VERTICES_PER_P) {
+                next_layer[i][counters[i]] = -1;
                 counters[i]++;
             }
 
@@ -336,29 +341,6 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 
         bsp_sync();
     }
-
-//    // iterate over the levels, beginning at the back
-//    for (long d = max_distance; d > 0; d--) {
-//        // for each vertex.
-//        for (long i = 0; i < MAX_NR_VERTICES_PER_P; i++) {
-//            if (distances[current_process_id][i] == d) {
-//                long idx = i * P + current_process_id;
-//
-//                for (int proc = 0; proc < P; ++proc) {
-//                    for (long j = 0; j < MAX_NR_VERTICES_PER_P; j++) {
-//                        long jdx = j * P + proc;
-//
-//                        if (adjacency_matrix[jdx][idx] > 0 && distances[proc][j] == d - 1) {
-//                            long dest_proc = j % P;
-//                            long double frac = (long double) sigmas[dest_proc][j] / sigmas[current_process_id][i];
-//
-//                            deltas[dest_proc][j] += frac * (deltas[current_process_id][i] + 1);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
 
     // Distribute the distances of the current processor, that are complete.
     for (int i = 0; i < P; ++i) {
@@ -380,11 +362,17 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 
     bsp_sync();
 
+    // Free the variables.
+    free_matrix_long(&layer, P);
+    free_matrix_long(&next_layer, P);
+    free_matrix_double(&next_deltas, P);
+    free(own_deltas);
+
     return deltas;
 }
 
 
-void parallel_wrap() {
+void parallel_betweenness_wrap() {
     bsp_begin(P);
 
     long*** values = parallel_bfs_vec();
@@ -392,19 +380,18 @@ void parallel_wrap() {
     long** sigmas = values[1];
     long double **deltas = parallel_dependency(distances, sigmas);
 
-    long double totals[P];
-    bsp_push_reg(&totals, P * sizeof(long double));
+    long double *totals = calloc(P, sizeof(long double));
+    bsp_push_reg(totals, P * sizeof(long double));
     bsp_sync();
 
     long current_processor_id = bsp_pid();
-    totals[current_processor_id] = 0.0;
 
     for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
         totals[current_processor_id] += deltas[current_processor_id][i];
     }
 
     for (int i = 0; i < P; ++i) {
-        bsp_put(i, &totals[current_processor_id], &totals, current_processor_id, sizeof(long double));
+        bsp_put(i, &totals[current_processor_id], totals, current_processor_id * sizeof(long double), sizeof(long double));
     }
 
     bsp_sync();
@@ -450,11 +437,12 @@ void parallel_wrap() {
     free_matrix_double(&deltas, P);
     free_matrix_long(&sigmas, P);
     free(values);
+    free(totals);
 }
 
 
 int main(int argc, char **argv) {
-    bsp_init(parallel_wrap, argc, argv);
+    bsp_init(parallel_betweenness_wrap, argc, argv);
 
     int c, mat = 0, test = 0;
 
@@ -527,7 +515,7 @@ int main(int argc, char **argv) {
 //    }
     printf("\n");
 
-    parallel_wrap();
+    parallel_betweenness_wrap();
 
 //    for (long i = 0; i < NR_VERTICES; ++i) {
 //        printf(" %Lf", all_deltas[i]);

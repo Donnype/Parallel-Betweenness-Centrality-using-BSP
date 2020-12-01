@@ -75,6 +75,19 @@ double time_bfs_vec_parallel(int argc, char **argv) {
 }
 
 
+double time_betweenness_parallel(int argc, char **argv) {
+    struct timespec start, end;
+
+    clock_gettime(CLOCK_REALTIME, &start);
+
+    parallel_wrap(argc, argv);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    return diff(start, end);
+}
+
+
 int main(int argc, char **argv) {
     int c, runs = 5.0, mat = 0, test = 0;
     double ms = 0.0;
