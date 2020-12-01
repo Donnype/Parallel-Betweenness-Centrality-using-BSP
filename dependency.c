@@ -80,7 +80,7 @@ long*** parallel_bfs_vec() {
     memset(own_sigmas, 0, MAX_NR_VERTICES_PER_P * sizeof(long));
 
     if (current_process_id == source % P) {
-        // We assume that the source vertex was received from processor 0.
+        // We assume that the source vertex was received from the processor containing it.
         neighbourhood[current_process_id][0] = source;
         next_sigmas[current_process_id][0] = 1;
     }
@@ -196,10 +196,19 @@ long*** parallel_bfs_vec() {
 
     bsp_sync();
 
+    for (int i = 0; i < P; ++i) {
+        bsp_pop_reg(&done[i]);
+        bsp_pop_reg(neighbourhood[i]);
+        bsp_pop_reg(next_neighbourhoods[i]);
+        bsp_pop_reg(distances[i]);
+        bsp_pop_reg(sigmas[i]);
+        bsp_pop_reg(next_sigmas[i]);
+    }
 
     // Free the variables.
     free_matrix_long(&neighbourhood, P);
     free_matrix_long(&next_neighbourhoods, P);
+
 
     long*** values = malloc(2 * sizeof(long**));
 
@@ -212,13 +221,28 @@ long*** parallel_bfs_vec() {
 
 long double** parallel_dependency(long **distances, long **sigmas) {
     long current_process_id = bsp_pid();
+    long counters[P];
 
     long double **deltas = (long double **) malloc(P * sizeof(long double*));
-    long **next_neighbourhoods = (long **) malloc(P * sizeof(long *));
+    long double **next_deltas = (long double **) malloc(P * sizeof(long double*));
+    long **next_layer = (long **) malloc(P * sizeof(long *));
+    long **layer = (long **) malloc(P * sizeof(long *));
 
     for (int i = 0; i < P; ++i) {
+        layer[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
+        next_layer[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
         deltas[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+        next_deltas[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+        memset(layer[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
+        memset(next_layer[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
+
+        bsp_push_reg(layer[i], MAX_NR_VERTICES_PER_P * sizeof(long));
+        bsp_push_reg(next_layer[i], MAX_NR_VERTICES_PER_P * sizeof(long));
+        bsp_push_reg(deltas[i], MAX_NR_VERTICES_PER_P * sizeof(long double));
+        bsp_push_reg(next_deltas[i], MAX_NR_VERTICES_PER_P * sizeof(long double));
     }
+
+    bsp_sync();
 
     // finding the first vertex with the largest distance
     long max_distance = 0;
@@ -231,35 +255,133 @@ long double** parallel_dependency(long **distances, long **sigmas) {
         }
     }
 
+    long double* own_deltas = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+
+    // The processor identifies its vertices with the longest distance.
+
+    counters[current_process_id] = 0;
+
+    for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+        if (distances[current_process_id][i] == max_distance) {
+            layer[current_process_id][counters[current_process_id]] = 0;
+            counters[current_process_id]++;
+        }
+    }
+
+    layer[current_process_id][counters[current_process_id]] = -1;
+
     // iterate over the levels, beginning at the back
     for (long d = max_distance; d > 0; d--) {
+        memset(counters, 0, P * sizeof(long));
 
+        for (int proc = 0; proc < P; ++proc) {
+            for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
+                long vertex = layer[proc][index];
+                long delta_part = next_deltas[proc][index];
 
+                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+                if (vertex < 0) {
+                    break;
+                }
 
-        // for each vertex.
-        for (long i = 0; i < MAX_NR_VERTICES_PER_P; i++) {
-            if (distances[current_process_id][i] == d) {
-                long idx = i * P + current_process_id;
-                printf("%hd ", adjacency_matrix[0][1]);
+                // Collect the number of shortest paths to the vertex.
+                own_deltas[get_index(vertex)] += delta_part;
+            }
+        }
 
-                for (int proc = 0; proc < P; ++proc) {
-                    for (long j = 0; j < MAX_NR_VERTICES_PER_P; j++) {
-                        long jdx = j * P + proc;
-                        printf(" d - 1 is %ld ", d - 1);
+        if (current_process_id == 0) {
+            printf("%ld \n", layer[0][0]);
+        }
 
-                        if (adjacency_matrix[jdx][idx] > 0 && distances[proc][j] == d - 1) {
-                            long dest_proc = j % P;
-                            long double frac = (long double) sigmas[dest_proc][j] / sigmas[current_process_id][i];
+        for (int proc = 0; proc < P; ++proc) {
+            for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
+                long vertex = layer[proc][index];
 
-                            deltas[dest_proc][j] += frac * (deltas[current_process_id][i] + 1);
+                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+                if (vertex < 0) {
+                    break;
+                }
+
+                for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
+                    short dest_proc = neighbour % P;
+
+                    if (adjacency_matrix[neighbour][vertex] > 0 && distances[dest_proc][get_index(neighbour)] == d - 1) {
+                        if (deltas[dest_proc][get_index(neighbour)] == 0) {
+                            next_layer[dest_proc][counters[dest_proc]] = neighbour;
+                            counters[dest_proc]++;
                         }
+
+                        long double frac = (long double) sigmas[dest_proc][neighbour] / sigmas[current_process_id][vertex];
+                        deltas[dest_proc][get_index(neighbour)] += frac * (deltas[current_process_id][vertex] + 1);
                     }
                 }
             }
         }
+
+        // Communication of the next layer.
+        for (int i = 0; i < P; ++i) {
+            // Aggregate the deltas.
+            for (int j = 0; j < counters[i]; ++j) {
+                long neighbour = next_layer[i][j];
+                next_deltas[i][j] = deltas[i][get_index(neighbour)];
+            }
+
+            // Append the vectors with -1 to denote the end if they are smaller than the maximum size.
+            if (counters[i] + 1 < MAX_NR_VERTICES_PER_P) {
+                next_deltas[i][counters[i]] = -1;
+                counters[i]++;
+            }
+
+            // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
+            bsp_put(i, next_layer[i], layer[current_process_id], 0, counters[i] * sizeof(long));
+            bsp_put(i, next_deltas[i], next_deltas[current_process_id], 0, counters[i] * sizeof(long double));
+        }
+
+        bsp_sync();
     }
 
+//    // iterate over the levels, beginning at the back
+//    for (long d = max_distance; d > 0; d--) {
+//        // for each vertex.
+//        for (long i = 0; i < MAX_NR_VERTICES_PER_P; i++) {
+//            if (distances[current_process_id][i] == d) {
+//                long idx = i * P + current_process_id;
+//
+//                for (int proc = 0; proc < P; ++proc) {
+//                    for (long j = 0; j < MAX_NR_VERTICES_PER_P; j++) {
+//                        long jdx = j * P + proc;
+//
+//                        if (adjacency_matrix[jdx][idx] > 0 && distances[proc][j] == d - 1) {
+//                            long dest_proc = j % P;
+//                            long double frac = (long double) sigmas[dest_proc][j] / sigmas[current_process_id][i];
+//
+//                            deltas[dest_proc][j] += frac * (deltas[current_process_id][i] + 1);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+
+    // Distribute the distances of the current processor, that are complete.
+    for (int i = 0; i < P; ++i) {
+        bsp_put(i, own_deltas, deltas[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long double));
+    }
+
+    bsp_sync();
+
     deltas[source % P][get_index(source)] = 0.0;
+
+    bsp_sync();
+
+    for (int i = 0; i < P; ++i) {
+        bsp_pop_reg(deltas[i]);
+        bsp_pop_reg(next_deltas[i]);
+        bsp_pop_reg(layer[i]);
+        bsp_pop_reg(next_layer[i]);
+    }
+
+    bsp_sync();
 
     return deltas;
 }
@@ -273,7 +395,30 @@ void parallel_wrap() {
     long** sigmas = values[1];
     long double **deltas = parallel_dependency(distances, sigmas);
 
+    long double totals[P];
+    bsp_push_reg(&totals, P * sizeof(long double));
+    bsp_sync();
+
+    long current_processor_id = bsp_pid();
+    totals[current_processor_id] = 0.0;
+
+    for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+        totals[current_processor_id] += deltas[current_processor_id][i];
+    }
+
+    for (int i = 0; i < P; ++i) {
+        bsp_put(i, &totals[current_processor_id], &totals, current_processor_id, sizeof(long double));
+    }
+
+    bsp_sync();
+
     bsp_end();
+
+    long double total = 0.0;
+
+    for (int i = 0; i < P; ++i) {
+        total += totals[i];
+    }
 
     if (output) {
         printf("distances \n");
@@ -300,6 +445,8 @@ void parallel_wrap() {
             }
         }
         printf("\n");
+
+        printf("total is %Lf. \n", total);
     }
 
     free_matrix_long(&distances, P);
