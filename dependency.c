@@ -263,7 +263,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 
     for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
         if (distances[current_process_id][i] == max_distance) {
-            layer[current_process_id][counters[current_process_id]] = 0;
+            layer[current_process_id][counters[current_process_id]] = i * P + current_process_id;
             counters[current_process_id]++;
         }
     }
@@ -277,7 +277,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
         for (int proc = 0; proc < P; ++proc) {
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = layer[proc][index];
-                long delta_part = next_deltas[proc][index];
+                long double delta_part = next_deltas[proc][index];
 
                 // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
                 if (vertex < 0) {
@@ -287,10 +287,6 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                 // Collect the number of shortest paths to the vertex.
                 own_deltas[get_index(vertex)] += delta_part;
             }
-        }
-
-        if (current_process_id == 0) {
-            printf("%ld \n", layer[0][0]);
         }
 
         for (int proc = 0; proc < P; ++proc) {
@@ -317,6 +313,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                 }
             }
         }
+
 
         // Communication of the next layer.
         for (int i = 0; i < P; ++i) {
