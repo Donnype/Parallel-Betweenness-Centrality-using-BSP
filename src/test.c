@@ -5,6 +5,10 @@
 #include "../include/parallel_bfs.h"
 #include "../include/dependency.h"
 
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define RESET   "\x1b[0m"
+
 extern long NR_VERTICES;
 extern long NBH_INIT_SIZE;
 extern long MAX_NR_VERTICES_PER_P;
@@ -21,6 +25,18 @@ extern long** all_sigmas;
 extern long double** all_deltas;
 
 
+char out_text[80];
+
+void print_success() {
+    printf(GREEN "%s" RESET "\n", out_text);
+}
+
+
+void print_failure() {
+    printf(RED "%s" RESET "\n", out_text);
+}
+
+
 int check_long(long** result, long expected[NR_VERTICES]) {
     int failed = 0;
 
@@ -29,7 +45,8 @@ int check_long(long** result, long expected[NR_VERTICES]) {
             long idx = i * P + j;
 
             if (result[j][i] != expected[idx]) {
-                printf("Index %ld was wrong! Expected %ld vs result %ld \n", idx, expected[idx], result[j][i]);
+                sprintf(out_text, "Index %ld was wrong! Expected %ld vs result %ld", idx, expected[idx], result[j][i]);
+                print_failure();
                 failed = 1;
             }
         }
@@ -47,7 +64,8 @@ int check_double(long double** result, long double expected[NR_VERTICES]) {
             long idx = i * P + j;
 
             if (fabsl(result[j][i] - expected[idx]) > epsilon) {
-                printf("Index %ld was wrong! Expected %Lf vs result %Lf \n", idx, expected[idx], result[j][i]);
+                sprintf(out_text, "Index %ld was wrong! Expected %Lf vs result %Lf", idx, expected[idx], result[j][i]);
+                print_failure();
                 failed = 1;
             }
         }
@@ -66,9 +84,11 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
         free_matrix_long(&all_distances, P);
 
         if (failed == 1) {
-            printf("BFS test failed for P = %ld \n", P);
+            sprintf(out_text, "BFS test failed for P = %ld", P);
+            print_failure();
         } else {
-            printf("BFS test succeeded for P = %ld \n", P);
+            sprintf(out_text, "BFS test succeeded for P = %ld", P);
+            print_success();
         }
     }
 }
@@ -84,18 +104,22 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
         free_matrix_long(&all_sigmas, P);
 
         if (failed == 1) {
-            printf("Betweenness test sigmas failed for P = %ld \n", P);
+            sprintf(out_text, "Betweenness test sigmas failed for P = %ld", P);
+            print_failure();
         } else {
-            printf("Betweenness test sigmas succeeded for P = %ld \n", P);
+            sprintf(out_text, "Betweenness test sigmas succeeded for P = %ld", P);
+            print_success();
         }
 
         failed = check_double(all_deltas, expected_deltas);
         free_matrix_double(&all_deltas, P);
 
         if (failed == 1) {
-            printf("Betweenness test deltas failed for P = %ld \n", P);
+            sprintf(out_text, "Betweenness test deltas failed for P = %ld", P);
+            print_failure();
         } else {
-            printf("Betweenness test deltas succeeded for P = %ld \n", P);
+            sprintf(out_text, "Betweenness test deltas succeeded for P = %ld", P);
+            print_success();
         }
 
         printf("\n");
@@ -107,7 +131,7 @@ void first_test(int argc, char**argv) {
     printf("Performing first test with 7x7 graph. \n\n");
 
     NR_VERTICES = 7;
-    
+
     short graph[7][7] = {
         {0, 1, 1, 1, 0, 0, 0},
         {1, 0, 0, 0, 1, 0, 0},
