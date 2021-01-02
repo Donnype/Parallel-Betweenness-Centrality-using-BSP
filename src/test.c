@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "bfs.h"
-#include "parallel_bfs.h"
-#include "dependency.h"
+#include "../include/bfs.h"
+#include "../include/parallel_bfs.h"
+#include "../include/dependency.h"
 
 extern long NR_VERTICES;
 extern long NBH_INIT_SIZE;

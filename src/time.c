@@ -3,9 +3,9 @@
 # include <time.h>
 # include <math.h>
 #include <unistd.h>
-# include "bfs.h"
-# include "parallel_bfs.h"
-# include "dependency.h"
+# include "../include/bfs.h"
+# include "../include/parallel_bfs.h"
+# include "../include/dependency.h"
 
 
 extern long NR_VERTICES;
@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
     }
 
     return bfs(argc, argv);
-//    return seq_bfs();
+    return seq_bfs();
 //    return betweenness(argc, argv);
 
 }

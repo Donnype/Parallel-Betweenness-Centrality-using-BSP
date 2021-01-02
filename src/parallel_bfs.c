@@ -4,8 +4,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
-#include "bfs.h"
-#include "Node.h"
+#include "../include/bfs.h"
+#include "../include/Node.h"
 
 
 // Number of processors requested.
@@ -75,7 +75,7 @@ void parallel_bfs_linked() {
     }
 
     if (current_process_id == source % P) {
-        // For convenience we just say that the source vertex was received in the linked list from processor 0.
+        // For convenience we just say that the src vertex was received in the linked list from processor 0.
         push(&Stacks[0], source);
     }
 
@@ -196,7 +196,7 @@ void parallel_bfs_vec() {
     memset(own_distances, -1, MAX_NR_VERTICES_PER_P * sizeof(long));
 
     if (current_process_id == source % P) {
-        // We assume that the source vertex was received from processor 0.
+        // We assume that the src vertex was received from processor 0.
         neighbourhood[current_process_id][0] = source;
     }
 
@@ -373,7 +373,7 @@ int main(int argc, char **argv) {
 
     NR_VERTICES = n;
     SPARSITY = sparsity;
-    source = 0;
+    src = 0;
     MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
 
 

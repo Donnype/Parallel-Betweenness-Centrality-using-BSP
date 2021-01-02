@@ -4,7 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "Node.h"
+#include "../include/Node.h"
 
 long NR_VERTICES = 8400;
 long NBH_INIT_SIZE = 10;

@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "bfs.h"
-#include "parallel_bfs.h"
+#include "../include/bfs.h"
+#include "../include/parallel_bfs.h"
 
 
 extern long NR_VERTICES;
@@ -66,7 +66,7 @@ long*** parallel_bfs() {
     memset(own_sigmas, 0, MAX_NR_VERTICES_PER_P * sizeof(long));
 
     if (current_process_id == source % P) {
-        // We assume that the source vertex was received from the processor containing it.
+        // We assume that the src vertex was received from the processor containing it.
         neighbourhood[current_process_id][0] = source;
         next_sigmas[current_process_id][0] = 1;
     }
@@ -508,8 +508,8 @@ int main(int argc, char **argv) {
         print_matrix(adjacency_matrix);
     }
 
-//    long source = 0;
-//    distances = bfs_vec(adjacency_matrix, source);
+//    long src = 0;
+//    distances = bfs_vec(adjacency_matrix, src);
 
 //    for (long i = 0; i < NR_VERTICES; ++i) {
 //        printf(" %ld", distances[i]);

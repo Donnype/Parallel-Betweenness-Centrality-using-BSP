@@ -6,17 +6,18 @@ SCRIPTS = time.c test.c
 all: $(SCRIPTS:%.c=%)
 EXECUTABLES := $(SCRIPTS:%.c=%)
 
+SRC_DIR := src
 
-dependency: dependency.c bfs.c Node.c
-	$(CC) $(CFLAGS) -o $@ dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+dependency: $(SRC_DIR)/dependency.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+	$(CC) $(CFLAGS) -o $@ $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-test: test.c dependency.c parallel_bfs.c bfs.c Node.c
-	$(CC) $(CFLAGS) -o test test.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+test: $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+	$(CC) $(CFLAGS) -o test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-time: time.c dependency.c parallel_bfs.c bfs.c Node.c
-	$(CC) $(CFLAGS) -o time time.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+time: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+	$(CC) $(CFLAGS) -o time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-PARALLEL = parallel_bfs.c bfs.c Node.c
+PARALLEL = $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
 
 debug: $(PARALLEL)
 	$(CC) $(CFLAGS) --debug -o debug $(PARALLEL) $(LFLAGS)
@@ -24,14 +25,14 @@ debug: $(PARALLEL)
 memory: $(PARALLEL)
 	$(CC) -std=c99 -Wall -o0 -g -o memory $(PARALLEL) $(LFLAGS)
 
-memory_time: time.c bfs.c Node.c
-	$(CC) -std=c99 -Wall -o0 -g -o memory_time time.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+memory_time: $(SRC_DIR)/time.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+	$(CC) -std=c99 -Wall -o0 -g -o memory_time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
 memory_test: test.c dependency.c parallel_bfs.c bfs.c Node.c
-	$(CC) -std=c99 -Wall -o0 -g -o memory_test test.c dependency.c parallel_bfs.c bfs.c Node.c $(LFLAGS)
+	$(CC) -std=c99 -Wall -o0 -g -o memory_test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
 memory_dep: dependency.c bfs.c Node.c
-	$(CC) -std=c99 -Wall -o0 -g -o memory_dep dependency.c bfs.c Node.c $(LFLAGS)
+	$(CC) -std=c99 -Wall -o0 -g -o memory_dep $(SRC_DIR)/dependency.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
 profile: $(PARALLEL)
 	$(CC) $(CFLAGS) --profile -o profile $(PARALLEL) $(LFLAGS)
@@ -39,4 +40,4 @@ profile: $(PARALLEL)
 .PHONY: clean
 
 clean:
-	rm -f $(EXECUTABLES) debug memory profile memory_time
+	rm -f $(EXECUTABLES) debug memory test time profile memory_time memory_dep memory_test dependency

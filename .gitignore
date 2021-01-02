@@ -13,3 +13,6 @@ memory.dSYM
 massif.*
 profile_*
 *.png
+cmake-build-debug
+data
+figures
