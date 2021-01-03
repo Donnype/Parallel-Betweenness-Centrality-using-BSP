@@ -21,18 +21,7 @@ short output;
 long **all_distances;
 
 
-short all_null(Node* Stacks[P]) {
-    for (int i = 0; i < P; ++i) {
-        if (Stacks[i]->data != -1) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-
-short all_null_vec(long vec[P]) {
+short all_null(long vec[P]) {
     for (int i = 0; i < P; ++i) {
         if (vec[i] != 0) {
             return 0;
@@ -43,7 +32,6 @@ short all_null_vec(long vec[P]) {
 }
 
 
-
 long get_index(long vertex) {
     long offset = vertex % P;
 
@@ -51,113 +39,7 @@ long get_index(long vertex) {
 }
 
 
-void parallel_bfs_linked() {
-    bsp_begin(P);
-
-    long current_process_id = bsp_pid();
-
-    long *distances = malloc(NR_VERTICES * sizeof(long));
-    memset(distances, -1, NR_VERTICES * sizeof(long));
-    distances[source] = 0;
-
-    // An array containing the linked lists (i.e. their heads) received from each processor.
-    Node *Stacks[P], *NewStacks[P];
-    short done[P];
-    for (int i = 0; i < P; ++i) {
-        bsp_push_reg(&done[i], sizeof(short));
-    }
-
-    bsp_sync();
-
-    for (int i = 0; i < P; ++i) {
-        Stacks[i] = create_node(-1);
-        NewStacks[i] = create_node(-1);
-    }
-
-    if (current_process_id == source % P) {
-        // For convenience we just say that the src vertex was received in the linked list from processor 0.
-        push(&Stacks[0], source);
-    }
-
-    for (long level = 1; level < NR_VERTICES; ++level) {
-
-        // We loop over the nodes received from each processor, starting with processor 0.
-        for (int proc = 0; proc < P; ++proc) {
-            long vertex = pop(&Stacks[proc]);
-
-            while (vertex >= 0) {
-                for (long neighbour = 0; neighbour < NR_VERTICES; ++neighbour) {
-                    if (adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour] < 0) {
-                        distances[neighbour] = level;
-                        short dest_proc = neighbour % P;
-
-                        push(&NewStacks[dest_proc], neighbour);
-                    }
-                }
-
-                vertex = pop(&Stacks[proc]);
-            }
-        }
-
-
-        for (int i = 0; i < P; ++i) {
-            free(Stacks[i]);
-            Stacks[i] = create_node(-1);
-//            Stacks[i] = free_linked(&Stacks[i]);
-            bsp_push_reg(Stacks[i], sizeof(Node));
-        }
-        bsp_sync();
-
-//        bsp_push_reg(Stacks, sizeof(Node));
-//        bsp_sync();
-
-        short tmp = all_null(NewStacks);
-        for (int i = 0; i < P; ++i) {
-            bsp_put(i, NewStacks[i], Stacks[current_process_id], 0, sizeof(Node));
-            bsp_put(i, &tmp, &done[current_process_id], 0, sizeof(short));
-//            NewStacks[i] = free_linked(&NewStacks[i]);
-            free(NewStacks[i]);
-            NewStacks[i] = create_node(-1);
-//            bsp_sync();
-
-        }
-
-        bsp_sync();
-
-        short all_done = 1;
-
-        for (int i = 0; i < P; ++i) {
-            if (done[i] == 0) {
-                all_done = 0;
-            }
-        }
-
-//        for (int i = 0; i < P; ++i) {
-//            printf("done %i in processor %ld is %i \n",i, current_process_id, done[i]);
-//        }
-//        printf(" all done in processor %ld is %i \n", current_process_id, all_done);
-//        print_stack(*Stacks[(current_process_id + 1) % P]);
-
-        if (all_done == 1) {
-//            printf("%ld is done\n", current_process_id);
-//            bsp_sync();
-            break;
-        }
-    }
-
-    bsp_sync();
-
-    if (current_process_id == 0) {
-        for (int i = 0; i < NR_VERTICES; ++i) {
-            printf("%ld ", distances[i]);
-        }
-    }
-//    bsp_sync();
-
-    bsp_end();
-}
-
-void parallel_bfs_vec() {
+void parallel_bfs() {
     bsp_begin(P);
 
     long current_process_id = bsp_pid();
@@ -237,7 +119,7 @@ void parallel_bfs_vec() {
         }
 
         // Does the current processor have anything to send, or is it done at this level?
-        done[current_process_id] = all_null_vec(counters);
+        done[current_process_id] = all_null(counters);
 
         for (int i = 0; i < P; ++i) {
             // Append the vectors with a -1 to denote the end if they are smaller than the maximum size.
@@ -314,15 +196,15 @@ void vertex_partition(short ***M) {
 
 
 void parallel_wrap(int argc, char **argv) {
-    bsp_init(parallel_bfs_vec, argc, argv);
+    bsp_init(parallel_bfs, argc, argv);
 
-    parallel_bfs_vec();
+    parallel_bfs();
 }
 
 
 /*
 int main(int argc, char **argv) {
-    bsp_init(parallel_bfs_vec, argc, argv);
+    bsp_init(parallel_bfs, argc, argv);
 
     int c, mat = 0, test = 0;
     long n, sparsity = SPARSITY;
@@ -404,7 +286,7 @@ int main(int argc, char **argv) {
         print_matrix(adjacency_matrix);
     }
 
-    parallel_bfs_vec();
+    parallel_bfs();
 
     free_matrix(&adjacency_matrix, NR_VERTICES);
 }

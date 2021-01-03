@@ -1,8 +1,8 @@
 # include <stdio.h>
-#include <stdlib.h>
+# include <stdlib.h>
 # include <time.h>
 # include <math.h>
-#include <unistd.h>
+# include <unistd.h>
 # include "../include/bfs.h"
 # include "../include/parallel_bfs.h"
 # include "../include/dependency.h"
@@ -63,7 +63,7 @@ double time_bfs_vec(short **matrix) {
 }
 
 
-double time_bfs_vec_parallel(int argc, char **argv) {
+double time_bfs_parallel(int argc, char **argv) {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
@@ -118,7 +118,7 @@ int bfs(int argc, char **argv) {
         MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
 
         for (int i = 0; i < runs; ++i) {
-            ms += time_bfs_vec_parallel(argc, argv);
+            ms += time_bfs_parallel(argc, argv);
         }
 
         ms = ms / runs;
@@ -158,6 +158,7 @@ int betweenness(int argc, char **argv) {
 
 
 int main(int argc, char **argv) {
+    // TODO: create an option struct handling this?
     int c, mat = 0, test = 0;
 
 //    Scan the optional CLI arguments using getopt.
@@ -216,5 +217,4 @@ int main(int argc, char **argv) {
     return bfs(argc, argv);
     return seq_bfs();
 //    return betweenness(argc, argv);
-
 }

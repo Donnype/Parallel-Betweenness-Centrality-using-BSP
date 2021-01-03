@@ -3,7 +3,7 @@
 
 extern long P;
 void parallel_wrap(int argc, char **argv);
-short all_null_vec(long vec[P]);
+short all_null(long vec[P]);
 long get_index(long vertex);
 
 #endif

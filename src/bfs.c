@@ -269,4 +269,3 @@ long double *seq_delta(short **adjacency, long source, long *distances) {
 
     return deltas;
 }
-

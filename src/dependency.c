@@ -20,7 +20,7 @@ long **all_sigmas;
 long double **all_deltas;
 
 
-long*** parallel_bfs() {
+long*** parallel_sigmas() {
     bsp_begin(P);
 
     long current_process_id = bsp_pid();
@@ -137,7 +137,7 @@ long*** parallel_bfs() {
         }
 
         // Does the current processor have anything to send, or is it done at this level?
-        done[current_process_id] = all_null_vec(counters);
+        done[current_process_id] = all_null(counters);
 
         for (int i = 0; i < P; ++i) {
             // Aggregate the frequencies.
@@ -368,7 +368,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 void parallel_betweenness() {
     bsp_begin(P);
 
-    long*** values = parallel_bfs();
+    long*** values = parallel_sigmas();
     long** distances = values[0];
     long** sigmas = values[1];
     long double **deltas = parallel_dependency(distances, sigmas);
