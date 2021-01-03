@@ -1,5 +1,5 @@
 CC= bspcc
-CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L
+CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L -I include
 LFLAGS= -lm
 
 SCRIPTS = time.c test.c
@@ -7,15 +7,16 @@ all: $(SCRIPTS:%.c=%)
 EXECUTABLES := $(SCRIPTS:%.c=%)
 
 SRC_DIR := src
+INCLUDE_DIR := include
 
-dependency: $(SRC_DIR)/dependency.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+dependency: $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
 	$(CC) $(CFLAGS) -o $@ $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
 test: $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
-	$(CC) $(CFLAGS) -o test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
+	$(CC) $(CFLAGS) -o test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(LFLAGS)
 
 time: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
-	$(CC) $(CFLAGS) -o time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
+	$(CC) $(CFLAGS) -o time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(LFLAGS)
 
 PARALLEL = $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
 

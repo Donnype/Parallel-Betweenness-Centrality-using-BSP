@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "../include/Node.h"
+#include "Node.h"
 
 
 Node* create_node(long data) {

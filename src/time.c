@@ -1,21 +1,24 @@
-# include <stdio.h>
-# include <stdlib.h>
-# include <time.h>
-# include <math.h>
-# include <unistd.h>
-# include "../include/bfs.h"
-# include "../include/parallel_bfs.h"
-# include "../include/dependency.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+#include <unistd.h>
+#include "bfs.h"
+#include "parallel_bfs.h"
+#include "dependency.h"
+#include "Args.h"
 
 
-extern long NR_VERTICES;
-extern long NBH_INIT_SIZE;
+//extern long NR_VERTICES;
+//extern long NBH_INIT_SIZE;
 extern long MAX_NR_VERTICES_PER_P;
-extern long SPARSITY;
-extern long P;
-extern short output;
+//extern long SPARSITY;
+//extern long P;
+//extern short output;
 
 extern short **adjacency_matrix;
+
+extern Args* args;
 
 double diff(struct timespec start, struct timespec end) {
     long seconds = end.tv_sec - start.tv_sec;
@@ -49,8 +52,8 @@ double time_bfs_vec(short **matrix) {
 
     clock_gettime(CLOCK_REALTIME, &end);
 
-    if (output) {
-        for (int i = 0; i < NR_VERTICES; ++i) {
+    if (args->output) {
+        for (int i = 0; i < args->nr_vertices; ++i) {
             printf("%ld ", d[i]);
         }
 
@@ -102,7 +105,7 @@ int seq_bfs() {
     ms = ms / runs;
     printf("%f\n", ms);
 
-    free_matrix(&adjacency_matrix, NR_VERTICES);
+    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
@@ -114,20 +117,20 @@ int bfs(int argc, char **argv) {
     printf("BFS parallel: \n\n");
     printf("p\tms\n");
 
-    for (P = 1; P < 9; ++P) {
-        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+    for (args->nr_processors = 1; args->nr_processors < 9; ++args->nr_processors) {
+        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
 
         for (int i = 0; i < runs; ++i) {
             ms += time_bfs_parallel(argc, argv);
         }
 
         ms = ms / runs;
-        printf("%ld\t%f\n", P, ms);
+        printf("%ld\t%f\n", args->nr_processors, ms);
         ms = 0.0;
     }
 
 
-    free_matrix(&adjacency_matrix, NR_VERTICES);
+    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
@@ -138,59 +141,30 @@ int betweenness(int argc, char **argv) {
     printf("Betweenness parallel: \n\n");
     printf("p\tms\n");
 
-    for (P = 1; P < 9; P++) {
-        MAX_NR_VERTICES_PER_P = NR_VERTICES / P;
+    for (args->nr_processors = 1; args->nr_processors < 9; args->nr_processors++) {
+        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
 
         for (int i = 0; i < runs; ++i) {
             ms += time_betweenness_parallel(argc, argv);
         }
 
         ms = ms / runs;
-        printf("%ld\t%f\n", P, ms);
+        printf("%ld\t%f\n", args->nr_processors, ms);
         ms = 0.0;
     }
 
 
-    free_matrix(&adjacency_matrix, NR_VERTICES);
+    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
 
 
 int main(int argc, char **argv) {
-    // TODO: create an option struct handling this?
-    int c, mat = 0, test = 0;
+    read_args(argc, argv);
 
-//    Scan the optional CLI arguments using getopt.
-    while ((c = getopt(argc, argv, ":i:n:s:p:o:m:t:")) != -1) {
-        switch (c) {
-            case 'i':
-                NBH_INIT_SIZE = strtoul(optarg, NULL, 10);
-                break;
-            case 'n':
-                NR_VERTICES = strtoul(optarg, NULL, 10);
-                break;
-            case 's':
-                SPARSITY = strtoul(optarg, NULL, 10);
-                break;
-            case 'p':
-                P = strtol(optarg, NULL, 10);
-                break;
-            case 'o':
-                output = 1;
-                break;
-            case 'm':
-                mat = 1;
-                break;
-            case 't':
-                test = 1;
-                break;
-        }
-    }
-
-
-    if (test == 1) {
-        NR_VERTICES = 10;
+    if (args->test == 1) {
+        args->nr_vertices = 10;
 
         short graph[10][10] = {
                 {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
@@ -210,11 +184,11 @@ int main(int argc, char **argv) {
         adjacency_matrix = generate_symmetric_matrix();
     }
 
-    if (mat == 1) {
+    if (args->print_matrix == 1) {
         print_matrix(adjacency_matrix);
     }
 
-    return bfs(argc, argv);
-    return seq_bfs();
-//    return betweenness(argc, argv);
+//    return bfs(argc, argv);
+//    return seq_bfs();
+    return betweenness(argc, argv);
 }
