@@ -4,8 +4,8 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "Node.h"
-#include "Args.h"
+#include "../include/Node.h"
+#include "../include/Args.h"
 
 
 short **adjacency_matrix;

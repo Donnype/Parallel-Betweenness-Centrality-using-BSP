@@ -3,10 +3,10 @@
 #include <time.h>
 #include <math.h>
 #include <unistd.h>
-#include "bfs.h"
-#include "parallel_bfs.h"
-#include "dependency.h"
-#include "Args.h"
+#include "../include/bfs.h"
+#include "../include/parallel_bfs.h"
+#include "../include/dependency.h"
+#include "../include/Args.h"
 
 
 extern long MAX_NR_VERTICES_PER_P;

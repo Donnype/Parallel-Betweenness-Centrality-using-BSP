@@ -4,9 +4,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
-#include "bfs.h"
-#include "Node.h"
-#include "Args.h"
+#include "../include/bfs.h"
+#include "../include/Node.h"
+#include "../include/Args.h"
 
 
 extern Args* args;

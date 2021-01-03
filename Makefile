@@ -1,5 +1,5 @@
 CC= bspcc
-CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L -I include
+CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L
 LFLAGS= -lm
 
 SCRIPTS = time.c test.c

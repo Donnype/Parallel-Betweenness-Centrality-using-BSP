@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include "Args.h"
+#include "../include/Args.h"
 
 
 Args* args;

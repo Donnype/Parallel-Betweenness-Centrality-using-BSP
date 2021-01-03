@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include "bfs.h"
-#include "parallel_bfs.h"
-#include "dependency.h"
-#include "Args.h"
+#include "../include/bfs.h"
+#include "../include/parallel_bfs.h"
+#include "../include/dependency.h"
+#include "../include/Args.h"
 
 #define RED     "\x1b[31m"
 #define GREEN   "\x1b[32m"

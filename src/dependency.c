@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "Args.h"
-#include "bfs.h"
-#include "parallel_bfs.h"
+#include "../include/Args.h"
+#include "../include/bfs.h"
+#include "../include/parallel_bfs.h"
+#include "../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/malloc/_malloc.h"
 
 
 long MAX_NR_VERTICES_PER_P;
@@ -438,65 +439,3 @@ void parallel_betweenness_wrap(int argc, char **argv) {
 
     parallel_betweenness();
 }
-
-/*
-int main(int argc, char **argv) {
-    bsp_init(parallel_betweenness, argc, argv);
-    read_args(argc, argv);
-
-    if (args->test == 1) {
-        args->nr_vertices = 10;
-
-        short graph[10][10] = {
-                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
-                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
-                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
-                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
-                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
-                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
-        };
-//        args->nr_vertices = 7;
-//
-//        short graph[7][7] = {
-//                {0, 1, 1, 1, 0, 0, 0},
-//                {1, 0, 0, 0, 1, 0, 0},
-//                {1, 0, 0, 0, 0, 1, 0},
-//                {1, 0, 0, 0, 0, 1, 0},
-//                {0, 1, 0, 0, 0, 0, 1},
-//                {0, 0, 1, 1, 0, 0, 1},
-//                {0, 0, 0, 0, 1, 1, 0},
-//        };
-
-        adjacency_matrix = fill_buffer(graph);
-    } else {
-        adjacency_matrix = generate_symmetric_matrix();
-    }
-
-    MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
-    if (args->print_matrix == 1) {
-        print_matrix(adjacency_matrix);
-    }
-
-//    long src = 0;
-//    distances = bfs_vec(adjacency_matrix, src);
-
-//    for (long i = 0; i < args->nr_vertices; ++i) {
-//        printf(" %ld", distances[i]);
-//    }
-    printf("\n");
-
-    parallel_betweenness();
-
-//    for (long i = 0; i < args->nr_vertices; ++i) {
-//        printf(" %Lf", all_deltas[i]);
-//    }
-//    printf("\n");
-
-    free_matrix(&adjacency_matrix, args->nr_vertices);
-
-    return 0;
-}*/
