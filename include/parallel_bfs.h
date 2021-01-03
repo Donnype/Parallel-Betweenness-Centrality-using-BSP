@@ -5,5 +5,6 @@ extern long P;
 void parallel_wrap(int argc, char **argv);
 short all_null(long vec[P]);
 long get_index(long vertex);
+long ** allocate_and_register_matrix(long value);
 
 #endif

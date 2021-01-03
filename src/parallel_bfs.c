@@ -36,6 +36,23 @@ long get_index(long vertex) {
 }
 
 
+long ** allocate_and_register_matrix(long value) {
+    long ** matrix = (long **) malloc(args->nr_processors * sizeof(long *));
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        matrix[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
+
+        if (value != 0) {
+            memset(matrix[i], value, MAX_NR_VERTICES_PER_P * sizeof(long));
+        }
+
+        bsp_push_reg(matrix[i], MAX_NR_VERTICES_PER_P * sizeof(long));
+    }
+
+    return matrix;
+}
+
+
 void parallel_bfs() {
     bsp_begin(args->nr_processors);
 
@@ -44,29 +61,19 @@ void parallel_bfs() {
 
     // Variable that keeps track of if processors have anything left to send.
     short done[args->nr_processors];
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        done[i] = 0;
+        bsp_push_reg(&done[i], sizeof(short));
+    }
+
     // Variable that keeps track of the length of the message to send.
     long counters[args->nr_processors];
 
     // Allocate and register all the relevant variables.
-    long **neighbourhood = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **next_neighbourhoods = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **distances = (long **) malloc(args->nr_processors * sizeof(long *));
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        neighbourhood[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        next_neighbourhoods[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        distances[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        memset(neighbourhood[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(next_neighbourhoods[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(distances[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-
-        done[i] = 0;
-
-        bsp_push_reg(&done[i], sizeof(short));
-        bsp_push_reg(neighbourhood[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(next_neighbourhoods[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(distances[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-    }
+    long **neighbourhood = allocate_and_register_matrix(-1);
+    long **next_neighbourhoods = allocate_and_register_matrix(-1);
+    long **distances = allocate_and_register_matrix(-1);
 
     bsp_sync();
 

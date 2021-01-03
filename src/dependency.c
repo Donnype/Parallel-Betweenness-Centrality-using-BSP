@@ -6,7 +6,6 @@
 #include "../include/Args.h"
 #include "../include/bfs.h"
 #include "../include/parallel_bfs.h"
-#include "../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/malloc/_malloc.h"
 
 
 long MAX_NR_VERTICES_PER_P;
@@ -30,30 +29,16 @@ long*** parallel_sigmas() {
     long counters[args->nr_processors];
 
     // Allocate and register all the relevant variables.
-    long **neighbourhood = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **next_neighbourhoods = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **distances = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **sigmas = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **next_sigmas = (long **) malloc(args->nr_processors * sizeof(long *));
+    long **neighbourhood = allocate_and_register_matrix(-1);
+    long **next_neighbourhoods = allocate_and_register_matrix(-1);
+    long **distances = allocate_and_register_matrix(-1);
+    long **sigmas = allocate_and_register_matrix(0);
+    long **next_sigmas = allocate_and_register_matrix(0);
 
     for (int i = 0; i < args->nr_processors; ++i) {
-        neighbourhood[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        next_neighbourhoods[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        distances[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        sigmas[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        next_sigmas[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        memset(neighbourhood[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(next_neighbourhoods[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(distances[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-
         done[i] = 0;
 
         bsp_push_reg(&done[i], sizeof(short));
-        bsp_push_reg(neighbourhood[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(next_neighbourhoods[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(distances[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(sigmas[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(next_sigmas[i], MAX_NR_VERTICES_PER_P * sizeof(long));
     }
 
     bsp_sync();
