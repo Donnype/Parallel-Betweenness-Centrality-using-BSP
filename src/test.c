@@ -10,12 +10,8 @@
 #define GREEN   "\x1b[32m"
 #define RESET   "\x1b[0m"
 
-//extern long NR_VERTICES;
-//extern long NBH_INIT_SIZE;
 extern long MAX_NR_VERTICES_PER_P;
-//extern long SPARSITY;
-//extern long P;
-//extern short output;
+
 extern short** adjacency_matrix;
 extern Args* args;
 

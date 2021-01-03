@@ -8,11 +8,7 @@
 #include "parallel_bfs.h"
 
 
-//extern long NR_VERTICES;
 long MAX_NR_VERTICES_PER_P;
-//extern long SPARSITY;
-//extern long P;
-//short output = 0;
 extern Args* args;
 
 extern short **adjacency_matrix;

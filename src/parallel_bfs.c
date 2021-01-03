@@ -9,17 +9,12 @@
 #include "Args.h"
 
 
-// Number of processors requested.
-//extern long P;
 extern Args* args;
-
-//extern long NR_VERTICES;
 long MAX_NR_VERTICES_PER_P;
+long source = 0;
 
 // A matrix representation of the graph, vertex partitioned.
 extern short **adjacency_matrix;
-long source = 0;
-//short output;
 long **all_distances;
 
 

@@ -8,11 +8,11 @@
 Args* args;
 
 
+// Scan the optional CLI arguments using getopt.
 void read_args(int argc, char **argv) {
     int c;
     args = (Args*) malloc(sizeof(Args));
 
-//    Scan the optional CLI arguments using getopt.
     while ((c = getopt(argc, argv, ":i:n:s:p:o:m:t:")) != -1) {
         switch (c) {
             case 'i':

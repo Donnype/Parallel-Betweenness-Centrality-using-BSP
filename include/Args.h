@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+// A structure that holds all the global arguments and flags.
 typedef struct Args {
     long neighbourhood_size;
     long nr_vertices;

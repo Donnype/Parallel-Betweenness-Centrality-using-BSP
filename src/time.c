@@ -9,15 +9,8 @@
 #include "Args.h"
 
 
-//extern long NR_VERTICES;
-//extern long NBH_INIT_SIZE;
 extern long MAX_NR_VERTICES_PER_P;
-//extern long SPARSITY;
-//extern long P;
-//extern short output;
-
 extern short **adjacency_matrix;
-
 extern Args* args;
 
 double diff(struct timespec start, struct timespec end) {
