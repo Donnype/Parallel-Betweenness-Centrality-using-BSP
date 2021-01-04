@@ -99,14 +99,13 @@ long *bfs_linked(long source) {
 
 
 void bfs_vec(long source) {
-    // Since this is a sequential version, graph->distances has just one row.
-    int proc = 0;
-    allocate_distances();
+    long *distances = malloc(args->nr_vertices * sizeof(long));
+    memset(distances, -1, args->nr_vertices * sizeof(long));
 
     long *neighborhood = calloc(args->neighbourhood_size, sizeof(long));
     long *new_neighborhood = calloc(args->neighbourhood_size, sizeof(long));
 
-    graph->distances[proc][source] = 0;
+    distances[source] = 0;
     neighborhood[0] = source;
     neighborhood[1] = -1;
 
@@ -123,8 +122,8 @@ void bfs_vec(long source) {
             long vertex = neighborhood[i];
 
             for (long j = 0; j < args->nr_vertices; ++j) {
-                if (graph->adjacency_matrix[j][vertex] > 0 && graph->distances[proc][j] < 0) {
-                    graph->distances[proc][j] = level;
+                if (graph->adjacency_matrix[j][vertex] > 0 && distances[j] < 0) {
+                    distances[j] = level;
                     new_neighborhood[counter] = j;
                     counter++;
                 }
@@ -148,45 +147,7 @@ void bfs_vec(long source) {
     if (new_neighborhood != NULL) {
         free(new_neighborhood);
     }
-}
 
-
-long double *seq_delta(long source, long *distances) {
-    long double *deltas = malloc(args->nr_vertices * sizeof(long double));
-    memset(deltas, 0, args->nr_vertices * sizeof(long double));
-
-    // finding the first vertex with the largest distance
-    long max_distance = 0;
-
-    for (long i = 0; i < args->nr_vertices; i++) {
-        if (distances[i] > max_distance) {
-            max_distance = distances[i];
-        }
-    }
-
-    // iterate over the levels, beginning at the back
-    for (long d = max_distance; d > 0; d--) {
-        // for each vertex.
-        for (long i = 0; i < args->nr_vertices; i++) {
-            if (distances[i] == d) {
-                // first count the predecessors, then add the right fraction to delta.
-                // TODO: make a list?
-                long counter = 0;
-                for (long j = 0; j < args->nr_vertices; j++) {
-                    if (graph->adjacency_matrix[i][j] == 1 && distances[j] == distances[i] - 1) {
-                        counter++;
-                    }
-                }
-
-                // printf(" %ld\t%ld\n", i, counter);
-                for (long j = 0; j < args->nr_vertices; j++) {
-                    if (graph->adjacency_matrix[i][j] == 1 && distances[j] == distances[i] - 1) {
-                        deltas[j] += ((long double) 1 / counter) * (deltas[i] + 1);
-                    }
-                }
-            }
-        }
-    }
-
-    return deltas;
+    graph->distances = malloc(sizeof(long *));
+    graph->distances[0] = distances;
 }

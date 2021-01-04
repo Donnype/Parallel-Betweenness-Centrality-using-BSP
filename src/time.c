@@ -94,6 +94,7 @@ int seq_bfs() {
 
     for (int i = 0; i < args->runs; ++i) {
         ms += time_bfs_vec();
+        clean_graph_data();
     }
 
     ms = ms / args->runs;

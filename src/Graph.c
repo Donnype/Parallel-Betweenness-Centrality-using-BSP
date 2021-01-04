@@ -1,7 +1,9 @@
+#include <bsp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <stdbool.h>
 #include "../include/Args.h"
 #include "../include/Graph.h"
 #include "../include/bfs.h"
@@ -98,6 +100,21 @@ void free_mat_double(long double ***M, long nr_rows) {
 }
 
 
+void clean_graph_data() {
+    if (graph->distances != NULL) {
+        free_mat_long(&(graph->distances), args->nr_processors);
+    }
+
+    if (graph->sigmas != NULL) {
+        free_mat_long(&(graph->sigmas), args->nr_processors);
+    }
+
+    if (graph->deltas != NULL) {
+        free_mat_double(&(graph->deltas), args->nr_processors);
+    }
+}
+
+
 void generate_graph() {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = generate_symmetric_mat();
@@ -116,16 +133,6 @@ void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
 }
 
 
-void allocate_distances() {
-    graph->distances = (long **) malloc(args->nr_processors * sizeof(long *));
-
-    for (int proc = 0; proc < args->nr_processors; ++proc) {
-        graph->distances[proc] = (long *) malloc(args->vertices_per_proc * sizeof(long));
-        memset(graph->distances[proc], -1, args->vertices_per_proc * sizeof(long));
-    }
-}
-
-
 void free_graph() {
     if (graph == NULL) {
         return;
@@ -135,19 +142,6 @@ void free_graph() {
         free_mat(&(graph->adjacency_matrix), args->nr_vertices);
     }
 
-    if (graph->distances != NULL) {
-
-
-        free_mat_long(&(graph->distances), args->nr_processors);
-    }
-
-    if (graph->sigmas != NULL) {
-        free_mat_long(&(graph->sigmas), args->nr_processors);
-    }
-
-    if (graph->deltas != NULL) {
-        free_mat_double(&(graph->deltas), args->nr_processors);
-    }
-
     free(graph);
 }
+

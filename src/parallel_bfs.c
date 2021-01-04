@@ -1,6 +1,7 @@
 #include <bsp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
@@ -16,7 +17,7 @@ extern Graph* graph;
 long source = 0;
 
 // A matrix representation of the graph, vertex partitioned.
-long **all_distances;
+//long **all_distances;
 
 
 short all_null(long vec[args->nr_processors]) {
@@ -110,9 +111,9 @@ void parallel_bfs() {
                 // Collect all neighbours of the vector and to which processor they should be sent.
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
                     if (graph->adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour % args->nr_processors][get_index(neighbour)] < 0) {
-                        distances[neighbour % args->nr_processors][get_index(neighbour)] = level;
                         short dest_proc = neighbour % args->nr_processors;
 
+                        distances[dest_proc][get_index(neighbour)] = level;
                         next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
 
                         // Keep track of the length of the vector that will be sent to dest_proc.
@@ -178,7 +179,7 @@ void parallel_bfs() {
 
     bsp_end();
 
-    all_distances = distances;
+    graph->distances = distances;
 }
 
 

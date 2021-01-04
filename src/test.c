@@ -18,7 +18,6 @@ extern Graph* graph;
 long p_count;
 long double epsilon = 0.00001;
 
-extern long** all_distances;
 extern long** all_sigmas;
 extern long double** all_deltas;
 
@@ -75,11 +74,12 @@ int check_double(long double** result, long double expected[args->nr_vertices]) 
 void test_bfs(int argc, char**argv, long ps[], long expected[]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
-
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
+
         parallel_wrap(argc, argv);
-        int failed = check_long(all_distances, expected);
-        free_matrix_long(&all_distances, args->nr_processors);
+
+        int failed = check_long(graph->distances, expected);
+        clean_graph_data();
 
         if (failed == 1) {
             sprintf(out_text, "BFS test failed for P = %ld", args->nr_processors);
