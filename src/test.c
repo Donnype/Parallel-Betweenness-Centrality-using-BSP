@@ -13,7 +13,6 @@
 
 extern long MAX_NR_VERTICES_PER_P;
 
-extern short** adjacency_matrix;
 extern Args* args;
 
 long p_count;
@@ -166,7 +165,7 @@ void second_test(int argc, char**argv) {
 
     args->nr_vertices = 10;
     
-    short graph[10][10] = {
+    short adjacency[10][10] = {
         {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
         {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
         {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
@@ -179,7 +178,7 @@ void second_test(int argc, char**argv) {
         {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
     };
 
-    adjacency_matrix = fill_buffer(graph);
+    construct_graph(adjacency);
     long expected[] = {0, 2, 1, 1, 1, 2, 1, 2, 1, 2};
     long ps[] = {1, 2, 5};
     p_count = 3;
@@ -193,8 +192,7 @@ void second_test(int argc, char**argv) {
 
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_matrix(&adjacency_matrix, args->nr_vertices);
-
+    free_graph();
     printf("\n\n");
 }
 
@@ -204,7 +202,7 @@ void third_test(int argc, char**argv) {
 
     args->nr_vertices = 9;
 
-    short graph[9][9] = {
+    short adjacency[9][9] = {
         {0, 1, 0, 0, 1, 0, 0, 0, 0},
         {1, 0, 1, 0, 0, 0, 0, 0, 0},
         {0, 1, 0, 1, 1, 0, 0, 0, 1},
@@ -216,7 +214,7 @@ void third_test(int argc, char**argv) {
         {0, 0, 1, 1, 0, 0, 1, 0, 0}
     };
 
-    adjacency_matrix = fill_buffer(graph);
+    construct_graph(adjacency);
     long expected[] = {0, 1, 2, 3, 1, 3, 2, 3, 3};
     long ps[] = {1, 3};
     p_count = 2;
@@ -230,7 +228,7 @@ void third_test(int argc, char**argv) {
 
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_matrix(&adjacency_matrix, args->nr_vertices);
+    free_graph();
 
     printf("\n\n");
 }

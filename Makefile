@@ -29,8 +29,8 @@ memory: $(PARALLEL)
 memory_time: $(SRC_DIR)/time.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
 	$(CC) -std=c99 -Wall -o0 -g -o memory_time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-memory_test: test.c dependency.c parallel_bfs.c bfs.c Node.c
-	$(CC) -std=c99 -Wall -o0 -g -o memory_test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
+memory_test: $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c
+	$(CC) -std=c99 -Wall -o0 -g -o memory_test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c $(LFLAGS)
 
 memory_dep: dependency.c bfs.c Node.c
 	$(CC) -std=c99 -Wall -o0 -g -o memory_dep $(SRC_DIR)/dependency.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)

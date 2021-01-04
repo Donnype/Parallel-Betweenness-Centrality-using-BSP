@@ -8,7 +8,6 @@
 #include "../include/Args.h"
 
 
-short **adjacency_matrix;
 extern Args* args;
 
 

@@ -17,7 +17,6 @@ long MAX_NR_VERTICES_PER_P;
 long source = 0;
 
 // A matrix representation of the graph, vertex partitioned.
-//extern short **adjacency_matrix;
 long **all_distances;
 
 

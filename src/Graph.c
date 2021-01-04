@@ -98,12 +98,18 @@ void free_mat_double(long double ***M, long nr_rows) {
 void generate_graph() {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = generate_symmetric_mat();
+    graph->distances = NULL;
+    graph->sigmas = NULL;
+    graph->deltas = NULL;
 }
 
 
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = fill_buf(matrix);
+    graph->distances = NULL;
+    graph->sigmas = NULL;
+    graph->deltas = NULL;
 }
 
 
@@ -127,4 +133,6 @@ void free_graph() {
     if (graph->deltas != NULL) {
         free_mat_double(&(graph->deltas), args->nr_vertices);
     }
+
+    free(graph);
 }
