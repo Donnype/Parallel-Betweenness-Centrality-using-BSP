@@ -14,9 +14,6 @@ extern Graph* graph;
 
 extern long source;
 
-long **all_sigmas;
-long double **all_deltas;
-
 
 long double ** allocate_and_register_matrix_double(long double value) {
     long double ** matrix = (long double **) malloc(args->nr_processors * sizeof(long double *));
@@ -86,7 +83,7 @@ void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long 
 }
 
 
-long*** parallel_sigmas() {
+void parallel_sigmas() {
     bsp_begin(args->nr_processors);
 
     long current_process_id = bsp_pid();
@@ -208,17 +205,12 @@ long*** parallel_sigmas() {
     free(own_distances);
     free(own_sigmas);
 
-    // TODO: "return concat(distances, sigmas)"
-    long*** values = malloc(2 * sizeof(long**));
-
-    values[0] = distances;
-    values[1] = sigmas;
-
-    return values;
+    graph->distances = distances;
+    graph->sigmas = sigmas;
 }
 
 
-long double** parallel_dependency(long **distances, long **sigmas) {
+void parallel_dependency() {
     long current_process_id = bsp_pid();
     long counters[args->nr_processors];
 
@@ -234,8 +226,8 @@ long double** parallel_dependency(long **distances, long **sigmas) {
 
     for (int i = 0; i < args->nr_processors; ++i) {
         for (long j = 0; j < args->vertices_per_proc; j++) {
-            if (distances[i][j] > max_distance) {
-                max_distance = distances[i][j];
+            if (graph->distances[i][j] > max_distance) {
+                max_distance = graph->distances[i][j];
             }
         }
     }
@@ -247,7 +239,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     counters[current_process_id] = 0;
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
-        if (distances[current_process_id][i] == max_distance) {
+        if (graph->distances[current_process_id][i] == max_distance) {
             layer[current_process_id][counters[current_process_id]] = i * args->nr_processors + current_process_id;
             counters[current_process_id]++;
         }
@@ -293,14 +285,14 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
                     short dest_proc = neighbour % args->nr_processors;
 
-                    if (graph->adjacency_matrix[neighbour][vertex] > 0 && distances[dest_proc][get_index(neighbour)] == d - 1) {
+                    if (graph->adjacency_matrix[neighbour][vertex] > 0 && graph->distances[dest_proc][get_index(neighbour)] == d - 1) {
                         if (deltas[dest_proc][get_index(neighbour)] == 0) {
                             next_layer[dest_proc][counters[dest_proc]] = neighbour;
                             counters[dest_proc]++;
                         }
 
-                        long double enumerator = (long double) sigmas[dest_proc][get_index(neighbour)];
-                        long double denominator = (long double) sigmas[current_process_id][get_index(vertex)];
+                        long double enumerator = (long double) graph->sigmas[dest_proc][get_index(neighbour)];
+                        long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
                         long double frac = enumerator / denominator;
                         deltas[dest_proc][get_index(neighbour)] += frac * (own_deltas[get_index(vertex)] + 1);
                     }
@@ -330,7 +322,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
         bsp_sync();
     }
 
-    // Distribute the distances of the current processor, that are complete.
+    // Distribute the deltas of the current processor, that are complete.
     for (int i = 0; i < args->nr_processors; ++i) {
         bsp_put(i, own_deltas, deltas[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
     }
@@ -338,8 +330,6 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     bsp_sync();
 
     deltas[source % args->nr_processors][get_index(source)] = 0.0;
-
-    bsp_sync();
 
     for (int i = 0; i < args->nr_processors; ++i) {
         bsp_pop_reg(deltas[i]);
@@ -357,17 +347,15 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     free(own_deltas);
     free(own_checked);
 
-    return deltas;
+    graph->deltas = deltas;
 }
 
 
 void parallel_betweenness() {
     bsp_begin(args->nr_processors);
 
-    long*** values = parallel_sigmas();
-    long** distances = values[0];
-    long** sigmas = values[1];
-    long double **deltas = parallel_dependency(distances, sigmas);
+    parallel_sigmas();
+    parallel_dependency();
 
     long double *totals = calloc(args->nr_processors, sizeof(long double));
     bsp_push_reg(totals, args->nr_processors * sizeof(long double));
@@ -376,7 +364,7 @@ void parallel_betweenness() {
     long current_processor_id = bsp_pid();
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
-        totals[current_processor_id] += deltas[current_processor_id][i];
+        totals[current_processor_id] += graph->deltas[current_processor_id][i];
     }
 
     for (int i = 0; i < args->nr_processors; ++i) {
@@ -384,11 +372,7 @@ void parallel_betweenness() {
     }
 
     bsp_sync();
-
     bsp_end();
-
-    all_sigmas = sigmas;
-    all_deltas = deltas;
 
     long double total = 0.0;
 
@@ -398,26 +382,25 @@ void parallel_betweenness() {
 
     if (args->output) {
         printf("distances \n");
-
         for (int i = 0; i < args->vertices_per_proc; ++i) {
             for (int j = 0; j < args->nr_processors; ++j) {
-                printf("%ld ", distances[j][i]);
+                printf("%ld ", graph->distances[j][i]);
             }
         }
         printf("\n");
+
         printf("sigmas \n");
         for (int i = 0; i < args->vertices_per_proc; ++i) {
             for (int j = 0; j < args->nr_processors; ++j) {
-                printf("%ld ", sigmas[j][i]);
+                printf("%ld ", graph->sigmas[j][i]);
             }
         }
         printf("\n");
 
         printf("deltas \n");
-
         for (int i = 0; i < args->vertices_per_proc; ++i) {
             for (int j = 0; j < args->nr_processors; ++j) {
-                printf("%Lf ", deltas[j][i]);
+                printf("%Lf ", graph->deltas[j][i]);
             }
         }
         printf("\n");
@@ -425,11 +408,9 @@ void parallel_betweenness() {
         printf("total is %Lf. \n", total);
     }
 
-    free_matrix_long(&distances, args->nr_processors);
-
-    free(values);
     free(totals);
 }
+
 
 void parallel_betweenness_wrap(int argc, char **argv) {
     bsp_init(parallel_betweenness, argc, argv);

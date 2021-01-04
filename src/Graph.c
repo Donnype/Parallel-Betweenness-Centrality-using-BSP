@@ -55,38 +55,8 @@ short **fill_buf(short graph[args->nr_vertices][args->nr_vertices]) {
 }
 
 
-void free_mat(short ***M, long nr_rows) {
+void free_matrix(short ***M, long nr_rows) {
     short **matrix = *M;
-
-    for (int i = 0; i < nr_rows; ++i) {
-        if (matrix[i] != NULL) {
-            free(matrix[i]);
-        }
-    }
-
-    if (matrix != NULL) {
-        free(matrix);
-    }
-}
-
-
-void free_mat_long(long ***M, long nr_rows) {
-    long **matrix = *M;
-
-    for (int i = 0; i < nr_rows; ++i) {
-        if (matrix[i] != NULL) {
-            free(matrix[i]);
-        }
-    }
-
-    if (matrix != NULL) {
-        free(matrix);
-    }
-}
-
-
-void free_mat_double(long double ***M, long nr_rows) {
-    long double **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
         if (matrix[i] != NULL) {
@@ -102,15 +72,15 @@ void free_mat_double(long double ***M, long nr_rows) {
 
 void clean_graph_data() {
     if (graph->distances != NULL) {
-        free_mat_long(&(graph->distances), args->nr_processors);
+        free_matrix_long(&(graph->distances), args->nr_processors);
     }
 
     if (graph->sigmas != NULL) {
-        free_mat_long(&(graph->sigmas), args->nr_processors);
+        free_matrix_long(&(graph->sigmas), args->nr_processors);
     }
 
     if (graph->deltas != NULL) {
-        free_mat_double(&(graph->deltas), args->nr_processors);
+        free_matrix_double(&(graph->deltas), args->nr_processors);
     }
 }
 
@@ -139,7 +109,7 @@ void free_graph() {
     }
 
     if (graph->adjacency_matrix != NULL) {
-        free_mat(&(graph->adjacency_matrix), args->nr_vertices);
+        free_matrix(&(graph->adjacency_matrix), args->nr_vertices);
     }
 
     free(graph);

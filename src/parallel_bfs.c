@@ -13,11 +13,7 @@
 
 extern Args* args;
 extern Graph* graph;
-
 long source = 0;
-
-// A matrix representation of the graph, vertex partitioned.
-//long **all_distances;
 
 
 short all_null(long vec[args->nr_processors]) {
@@ -153,7 +149,6 @@ void parallel_bfs() {
             break;
         }
     }
-
 
     // Distribute the distances of the current processor, that are complete.
     for (int i = 0; i < args->nr_processors; ++i) {

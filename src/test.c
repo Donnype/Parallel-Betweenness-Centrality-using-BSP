@@ -17,12 +17,8 @@ extern Graph* graph;
 
 long p_count;
 long double epsilon = 0.00001;
-
-extern long** all_sigmas;
-extern long double** all_deltas;
-
-
 char out_text[80];
+
 
 void print_success() {
     printf(GREEN "%s" RESET "\n", out_text);
@@ -98,8 +94,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
         parallel_betweenness_wrap(argc, argv);
 
-        int failed = check_long(all_sigmas, expected_sigmas);
-        free_matrix_long(&all_sigmas, args->nr_processors);
+        int failed = check_long(graph->sigmas, expected_sigmas);
 
         if (failed == 1) {
             sprintf(out_text, "Betweenness test sigmas failed for P = %ld", args->nr_processors);
@@ -109,8 +104,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             print_success();
         }
 
-        failed = check_double(all_deltas, expected_deltas);
-        free_matrix_double(&all_deltas, args->nr_processors);
+        failed = check_double(graph->deltas, expected_deltas);
 
         if (failed == 1) {
             sprintf(out_text, "Betweenness test deltas failed for P = %ld", args->nr_processors);
@@ -120,6 +114,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             print_success();
         }
 
+        clean_graph_data();
         printf("\n");
     }
 }

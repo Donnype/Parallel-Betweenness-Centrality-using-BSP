@@ -14,7 +14,6 @@ Node* create_node(long data) {
 
 void push(Node** head, long data) {
     Node* node = create_node(data);
-
     node->data = data;
     node->next = *head;
 
@@ -30,7 +29,6 @@ long pop(Node** stack) {
     }
 
     long data = head->data;
-
     *stack = head->next;
 
     if (head != NULL) {
@@ -39,20 +37,6 @@ long pop(Node** stack) {
     }
 
     return data;
-}
-
-
-void print_stack(Node stack) {
-    printf("(");
-    Node tmp = stack;
-
-    while (tmp.next != NULL) {
-        printf("%ld ", tmp.data);
-
-        tmp = *tmp.next;
-    }
-
-    printf("%ld )\n", tmp.data);
 }
 
 
