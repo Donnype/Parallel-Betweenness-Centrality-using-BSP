@@ -7,6 +7,7 @@
 #include "../include/parallel_bfs.h"
 #include "../include/dependency.h"
 #include "../include/Args.h"
+#include "../include/Graph.h"
 
 
 extern long MAX_NR_VERTICES_PER_P;
