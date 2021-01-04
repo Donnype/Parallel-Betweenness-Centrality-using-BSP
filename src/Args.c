@@ -49,4 +49,6 @@ void read_args(int argc, char **argv) {
                 break;
         }
     }
+
+    args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 };

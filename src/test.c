@@ -11,9 +11,9 @@
 #define GREEN   "\x1b[32m"
 #define RESET   "\x1b[0m"
 
-extern long MAX_NR_VERTICES_PER_P;
 
 extern Args* args;
+extern Graph* graph;
 
 long p_count;
 long double epsilon = 0.00001;
@@ -38,7 +38,7 @@ void print_failure() {
 int check_long(long** result, long expected[args->nr_vertices]) {
     int failed = 0;
 
-    for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+    for (int i = 0; i < args->vertices_per_proc; ++i) {
         for (int j = 0; j < args->nr_processors; ++j) {
             long idx = i * args->nr_processors + j;
 
@@ -57,7 +57,7 @@ int check_long(long** result, long expected[args->nr_vertices]) {
 int check_double(long double** result, long double expected[args->nr_vertices]) {
     int failed = 0;
 
-    for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+    for (int i = 0; i < args->vertices_per_proc; ++i) {
         for (int j = 0; j < args->nr_processors; ++j) {
             long idx = i * args->nr_processors + j;
 
@@ -76,7 +76,7 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
 
-        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
         parallel_wrap(argc, argv);
         int failed = check_long(all_distances, expected);
         free_matrix_long(&all_distances, args->nr_processors);
@@ -95,7 +95,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
 
-        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
         parallel_betweenness_wrap(argc, argv);
 
         int failed = check_long(all_sigmas, expected_sigmas);

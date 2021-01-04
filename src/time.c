@@ -10,7 +10,6 @@
 #include "../include/Graph.h"
 
 
-extern long MAX_NR_VERTICES_PER_P;
 extern Args* args;
 extern Graph* graph;
 
@@ -87,6 +86,8 @@ double time_betweenness_parallel(int argc, char **argv) {
 
 int seq_bfs() {
     double ms = 0.0;
+    args->nr_processors = 1;
+    args->vertices_per_proc = args->nr_vertices;
 
     printf("BFS sequential: \n\n");
     printf("ms\n");
@@ -109,7 +110,7 @@ int bfs(int argc, char **argv) {
     printf("p\tms\n");
 
     for (args->nr_processors = 1; args->nr_processors < 9; ++args->nr_processors) {
-        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
         for (int i = 0; i < args->runs; ++i) {
             ms += time_bfs_parallel(argc, argv);
@@ -130,7 +131,7 @@ int betweenness(int argc, char **argv) {
     printf("p\tms\n");
 
     for (args->nr_processors = 1; args->nr_processors < 9; args->nr_processors++) {
-        MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
         for (int i = 0; i < args->runs; ++i) {
             ms += time_betweenness_parallel(argc, argv);
@@ -164,9 +165,9 @@ int main(int argc, char **argv) {
                 {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
         };
 
-       construct_graph(adjacency);
+        construct_graph(adjacency);
     } else {
-       generate_graph();
+        generate_graph();
     }
 
     if (args->print_matrix == 1) {
@@ -176,6 +177,7 @@ int main(int argc, char **argv) {
 //    return bfs(argc, argv);
     int val = seq_bfs();
 //    int val = betweenness(argc, argv);
+
     free_graph();
     free(args);
 

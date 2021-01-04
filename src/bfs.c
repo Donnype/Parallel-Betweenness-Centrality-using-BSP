@@ -101,9 +101,7 @@ long *bfs_linked(long source) {
 void bfs_vec(long source) {
     // Since this is a sequential version, graph->distances has just one row.
     int proc = 0;
-    graph->distances = (long **) malloc(sizeof(long *));
-    graph->distances[proc] = (long *) malloc(args->nr_vertices * sizeof(long));
-    memset(graph->distances[proc], -1, args->nr_vertices * sizeof(long));
+    allocate_distances();
 
     long *neighborhood = calloc(args->neighbourhood_size, sizeof(long));
     long *new_neighborhood = calloc(args->neighbourhood_size, sizeof(long));

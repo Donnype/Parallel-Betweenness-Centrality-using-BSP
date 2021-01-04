@@ -13,7 +13,6 @@
 extern Args* args;
 extern Graph* graph;
 
-long MAX_NR_VERTICES_PER_P;
 long source = 0;
 
 // A matrix representation of the graph, vertex partitioned.
@@ -42,13 +41,13 @@ long ** allocate_and_register_matrix(long value) {
     long ** matrix = (long **) malloc(args->nr_processors * sizeof(long *));
 
     for (int i = 0; i < args->nr_processors; ++i) {
-        matrix[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
+        matrix[i] = (long *) calloc(args->vertices_per_proc, sizeof(long));
 
         if (value != 0) {
-            memset(matrix[i], value, MAX_NR_VERTICES_PER_P * sizeof(long));
+            memset(matrix[i], value, args->vertices_per_proc * sizeof(long));
         }
 
-        bsp_push_reg(matrix[i], MAX_NR_VERTICES_PER_P * sizeof(long));
+        bsp_push_reg(matrix[i], args->vertices_per_proc * sizeof(long));
     }
 
     return matrix;
@@ -79,8 +78,8 @@ void parallel_bfs() {
     bsp_sync();
 
     // It is convenient to keep track of the distances received by each processor separately.
-    long *own_distances = (long *) malloc(MAX_NR_VERTICES_PER_P * sizeof(long));
-    memset(own_distances, -1, MAX_NR_VERTICES_PER_P * sizeof(long));
+    long *own_distances = (long *) malloc(args->vertices_per_proc * sizeof(long));
+    memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
 
     if (current_process_id == source % args->nr_processors) {
         // We assume that the src vertex was received from processor 0.
@@ -92,7 +91,7 @@ void parallel_bfs() {
 
         // We loop over the nodes received from each processor.
         for (int proc = 0; proc < args->nr_processors; ++proc) {
-            for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
+            for (long index = 0; index < args->vertices_per_proc; index++) {
                 long vertex = neighbourhood[proc][index];
 
                 // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
@@ -128,7 +127,7 @@ void parallel_bfs() {
 
         for (int i = 0; i < args->nr_processors; ++i) {
             // Append the vectors with a -1 to denote the end if they are smaller than the maximum size.
-            if (counters[i] + 1 < MAX_NR_VERTICES_PER_P) {
+            if (counters[i] + 1 < args->vertices_per_proc) {
                 next_neighbourhoods[i][counters[i]] = -1;
                 counters[i]++;
             }
@@ -157,14 +156,14 @@ void parallel_bfs() {
 
     // Distribute the distances of the current processor, that are complete.
     for (int i = 0; i < args->nr_processors; ++i) {
-        bsp_put(i, own_distances, distances[current_process_id], 0, MAX_NR_VERTICES_PER_P * sizeof(long));
+        bsp_put(i, own_distances, distances[current_process_id], 0, args->vertices_per_proc * sizeof(long));
     }
 
     bsp_sync();
 
     // Depending on a CLI argument, print the distances found in processor 0.
     if (args->output && current_process_id == 0) {
-        for (int i = 0; i < MAX_NR_VERTICES_PER_P; ++i) {
+        for (int i = 0; i < args->vertices_per_proc; ++i) {
             for (int j = 0; j < args->nr_processors; ++j) {
                 printf("%ld ", distances[j][i]);
             }

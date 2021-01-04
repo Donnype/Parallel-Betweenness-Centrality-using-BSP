@@ -14,6 +14,7 @@ typedef struct Graph {
 } Graph;
 
 void generate_graph();
+void allocate_distances();
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
 void free_graph();
 
