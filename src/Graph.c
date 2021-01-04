@@ -123,15 +123,15 @@ void free_graph() {
     }
 
     if (graph->distances != NULL) {
-        free_mat_long(&(graph->distances), args->nr_vertices);
+        free_mat_long(&(graph->distances), args->nr_processors);
     }
 
     if (graph->sigmas != NULL) {
-        free_mat_long(&(graph->sigmas), args->nr_vertices);
+        free_mat_long(&(graph->sigmas), args->nr_processors);
     }
 
     if (graph->deltas != NULL) {
-        free_mat_double(&(graph->deltas), args->nr_vertices);
+        free_mat_double(&(graph->deltas), args->nr_processors);
     }
 
     free(graph);

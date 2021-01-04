@@ -11,8 +11,9 @@
 
 
 extern long MAX_NR_VERTICES_PER_P;
-extern short **adjacency_matrix;
 extern Args* args;
+extern Graph* graph;
+
 
 double diff(struct timespec start, struct timespec end) {
     long seconds = end.tv_sec - start.tv_sec;
@@ -22,12 +23,12 @@ double diff(struct timespec start, struct timespec end) {
 }
 
 
-double time_bfs_linked(short **matrix) {
+double time_bfs_linked() {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    long *d = bfs_linked(matrix, 0);
+    long *d = bfs_linked(0);
 
     clock_gettime(CLOCK_REALTIME, &end);
 
@@ -37,24 +38,22 @@ double time_bfs_linked(short **matrix) {
 }
 
 
-double time_bfs_vec(short **matrix) {
+double time_bfs_vec() {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
 
-    long *d = bfs_vec(matrix, 0);
+    bfs_vec(0);
 
     clock_gettime(CLOCK_REALTIME, &end);
 
     if (args->output) {
         for (int i = 0; i < args->nr_vertices; ++i) {
-            printf("%ld ", d[i]);
+            printf("%ld ", graph->distances[0][i]);
         }
 
         printf("\n");
     }
-
-    free(d);
 
     return diff(start, end);
 }
@@ -87,26 +86,24 @@ double time_betweenness_parallel(int argc, char **argv) {
 
 
 int seq_bfs() {
-    double ms = 0.0, runs = 5.0;
+    double ms = 0.0;
 
     printf("BFS sequential: \n\n");
     printf("ms\n");
 
-    for (int i = 0; i < runs; ++i) {
-        ms += time_bfs_vec(adjacency_matrix);
+    for (int i = 0; i < args->runs; ++i) {
+        ms += time_bfs_vec();
     }
 
-    ms = ms / runs;
+    ms = ms / args->runs;
     printf("%f\n", ms);
-
-    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
 
 
 int bfs(int argc, char **argv) {
-    double ms = 0.0, runs = 5.0;
+    double ms = 0.0;
 
     printf("BFS parallel: \n\n");
     printf("p\tms\n");
@@ -114,41 +111,35 @@ int bfs(int argc, char **argv) {
     for (args->nr_processors = 1; args->nr_processors < 9; ++args->nr_processors) {
         MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
 
-        for (int i = 0; i < runs; ++i) {
+        for (int i = 0; i < args->runs; ++i) {
             ms += time_bfs_parallel(argc, argv);
         }
 
-        ms = ms / runs;
+        ms = ms / args->runs;
         printf("%ld\t%f\n", args->nr_processors, ms);
         ms = 0.0;
     }
-
-
-    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
 
 
 int betweenness(int argc, char **argv) {
-    double ms = 0.0, runs = 5.0;
+    double ms = 0.0;
     printf("Betweenness parallel: \n\n");
     printf("p\tms\n");
 
     for (args->nr_processors = 1; args->nr_processors < 9; args->nr_processors++) {
         MAX_NR_VERTICES_PER_P = args->nr_vertices / args->nr_processors;
 
-        for (int i = 0; i < runs; ++i) {
+        for (int i = 0; i < args->runs; ++i) {
             ms += time_betweenness_parallel(argc, argv);
         }
 
-        ms = ms / runs;
+        ms = ms / args->runs;
         printf("%ld\t%f\n", args->nr_processors, ms);
         ms = 0.0;
     }
-
-
-    free_matrix(&adjacency_matrix, args->nr_vertices);
 
     return 0;
 }
@@ -160,7 +151,7 @@ int main(int argc, char **argv) {
     if (args->test == 1) {
         args->nr_vertices = 10;
 
-        short graph[10][10] = {
+        short adjacency[10][10] = {
                 {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
                 {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
                 {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
@@ -173,16 +164,20 @@ int main(int argc, char **argv) {
                 {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
         };
 
-        adjacency_matrix = fill_buffer(graph);
+       construct_graph(adjacency);
     } else {
-        adjacency_matrix = generate_symmetric_matrix();
+       generate_graph();
     }
 
     if (args->print_matrix == 1) {
-        print_matrix(adjacency_matrix);
+        print_matrix(graph->adjacency_matrix);
     }
 
 //    return bfs(argc, argv);
-//    return seq_bfs();
-    return betweenness(argc, argv);
+    int val = seq_bfs();
+//    int val = betweenness(argc, argv);
+    free_graph();
+    free(args);
+
+    return val;
 }

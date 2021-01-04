@@ -13,7 +13,6 @@ long MAX_NR_VERTICES_PER_P;
 extern Args* args;
 extern Graph* graph;
 
-//extern short **adjacency_matrix;
 extern long source;
 
 long **all_sigmas;

@@ -4,11 +4,12 @@ time
 parallel_bfc
 memory
 memory_time
+memory_test
 debug
 profile
 dependency
 memory_dep
-memory_test
+*dSYM
 memory.dSYM
 massif.*
 profile_*

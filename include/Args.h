@@ -9,6 +9,7 @@ typedef struct Args {
     long nr_vertices;
     long sparsity;
     long nr_processors;
+    double runs;
     bool output;
     bool print_matrix;
     bool test;

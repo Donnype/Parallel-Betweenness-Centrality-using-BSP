@@ -156,7 +156,6 @@ void first_test(int argc, char**argv) {
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();
-    printf("\n\n");
 }
 
 
@@ -193,7 +192,6 @@ void second_test(int argc, char**argv) {
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();
-    printf("\n\n");
 }
 
 
@@ -229,15 +227,16 @@ void third_test(int argc, char**argv) {
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();
-
-    printf("\n\n");
 }
 
 int main(int argc, char **argv) {
     read_args(argc, argv);
     first_test(argc, argv);
+    printf("\n");
     second_test(argc, argv);
+    printf("\n");
     third_test(argc, argv);
 
+    free(args);
     return 0;
 }
