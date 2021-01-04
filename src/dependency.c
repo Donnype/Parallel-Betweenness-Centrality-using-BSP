@@ -18,6 +18,74 @@ long **all_sigmas;
 long double **all_deltas;
 
 
+long double ** allocate_and_register_matrix_double(long double value) {
+    long double ** matrix = (long double **) malloc(args->nr_processors * sizeof(long double *));
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        matrix[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
+
+        if (value != 0) {
+            memset(matrix[i], value, MAX_NR_VERTICES_PER_P * sizeof(long double));
+        }
+
+        bsp_push_reg(matrix[i], MAX_NR_VERTICES_PER_P * sizeof(long double));
+    }
+
+    return matrix;
+}
+
+
+void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, long **next_sigmas) {
+    for (int proc = 0; proc < args->nr_processors; ++proc) {
+        for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
+            long vertex = neighbourhood[proc][index];
+            long frequency = next_sigmas[proc][index];
+
+            // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+            if (vertex < 0) {
+                break;
+            }
+
+            // Skip the vertex if we have seen it before.
+            if (own_distances[get_index(vertex)] >= 0) {
+                continue;
+            }
+
+            // Collect the number of shortest paths to the vertex.
+            own_sigmas[get_index(vertex)] += frequency;
+        }
+    }
+}
+
+
+void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
+    // Collect all neighbours of the vector and to which processor they should be sent.
+    for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
+        if (adjacency_matrix[neighbour][vertex] <= 0) {
+            continue;
+        }
+
+        short dest_proc = neighbour % args->nr_processors;
+
+        // We count how many times we send a vertex the first time for the sigmas.
+        if (distances[dest_proc][get_index(neighbour)] == level) {
+            sigmas[dest_proc][get_index(neighbour)] += own_sigmas[get_index(vertex)];
+
+            continue;
+        }
+
+        if (distances[dest_proc][get_index(neighbour)] < 0) {
+            sigmas[dest_proc][get_index(neighbour)] = own_sigmas[get_index(vertex)];
+            distances[dest_proc][get_index(neighbour)] = level;
+            next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+
+            // Keep track of the length of the vector that will be sent to dest_proc.
+            counters[dest_proc]++;
+        }
+    }
+}
+
+
 long*** parallel_sigmas() {
     bsp_begin(args->nr_processors);
 
@@ -37,7 +105,6 @@ long*** parallel_sigmas() {
 
     for (int i = 0; i < args->nr_processors; ++i) {
         done[i] = 0;
-
         bsp_push_reg(&done[i], sizeof(short));
     }
 
@@ -45,12 +112,11 @@ long*** parallel_sigmas() {
 
     // It is convenient to keep track of the distances received by each processor separately.
     long *own_distances = (long *) malloc(MAX_NR_VERTICES_PER_P * sizeof(long));
-    long *own_sigmas = (long *) malloc(MAX_NR_VERTICES_PER_P * sizeof(long));
+    long *own_sigmas = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
     memset(own_distances, -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-    memset(own_sigmas, 0, MAX_NR_VERTICES_PER_P * sizeof(long));
 
     if (current_process_id == source % args->nr_processors) {
-        // We assume that the src vertex was received from the processor containing it.
+        // We assume that the source vertex was received from the processor containing it.
         neighbourhood[current_process_id][0] = source;
         next_sigmas[current_process_id][0] = 1;
     }
@@ -58,36 +124,17 @@ long*** parallel_sigmas() {
     for (long level = 1; level < args->nr_vertices; ++level) {
         memset(counters, 0, args->nr_processors * sizeof(long));
 
-        for (int proc = 0; proc < args->nr_processors; ++proc) {
-            for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
-                long vertex = neighbourhood[proc][index];
-                long frequency = next_sigmas[proc][index];
-
-                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
-                if (vertex < 0) {
-                    break;
-                }
-
-                if (own_distances[get_index(vertex)] >= 0) {
-                    continue;
-                }
-
-                // Collect the number of shortest paths to the vertex.
-                own_sigmas[get_index(vertex)] += frequency;
-            }
-        }
+        update_sigmas(own_sigmas, own_distances, neighbourhood, next_sigmas);
 
         // We loop over the nodes received from each processor.
         for (int proc = 0; proc < args->nr_processors; ++proc) {
             for (long index = 0; index < MAX_NR_VERTICES_PER_P; index++) {
                 long vertex = neighbourhood[proc][index];
 
-                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
                 if (vertex < 0) {
                     break;
                 }
 
-                // Skip the vertex if we have seen it before.
                 if (own_distances[get_index(vertex)] >= 0) {
                     continue;
                 }
@@ -95,28 +142,7 @@ long*** parallel_sigmas() {
                 // Keep track of the distances.
                 own_distances[get_index(vertex)] = level - 1;
 
-                // Collect all neighbours of the vector and to which processor they should be sent.
-                for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    if (adjacency_matrix[neighbour][vertex] > 0) {
-                        short dest_proc = neighbour % args->nr_processors;
-
-                        // We count how many times we send a vertex the first time for the sigmas.
-                        if (distances[dest_proc][get_index(neighbour)] == level) {
-                            sigmas[dest_proc][get_index(neighbour)] += own_sigmas[get_index(vertex)];
-
-                            continue;
-                        }
-
-                        if (distances[dest_proc][get_index(neighbour)] < 0) {
-                            sigmas[dest_proc][get_index(neighbour)] = own_sigmas[get_index(vertex)];
-                            distances[dest_proc][get_index(neighbour)] = level;
-                            next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
-
-                            // Keep track of the length of the vector that will be sent to dest_proc.
-                            counters[dest_proc]++;
-                        }
-                    }
-                }
+                collect_neighbours(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level);
             }
         }
 
@@ -182,7 +208,7 @@ long*** parallel_sigmas() {
     free(own_distances);
     free(own_sigmas);
 
-
+    // TODO: "return concat(distances, sigmas)"
     long*** values = malloc(2 * sizeof(long**));
 
     values[0] = distances;
@@ -196,24 +222,10 @@ long double** parallel_dependency(long **distances, long **sigmas) {
     long current_process_id = bsp_pid();
     long counters[args->nr_processors];
 
-    long double **deltas = (long double **) malloc(args->nr_processors * sizeof(long double*));
-    long double **next_deltas = (long double **) malloc(args->nr_processors * sizeof(long double*));
-    long **next_layer = (long **) malloc(args->nr_processors * sizeof(long *));
-    long **layer = (long **) malloc(args->nr_processors * sizeof(long *));
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        layer[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        next_layer[i] = (long *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long));
-        deltas[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
-        next_deltas[i] = (long double *) calloc(MAX_NR_VERTICES_PER_P, sizeof(long double));
-        memset(layer[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-        memset(next_layer[i], -1, MAX_NR_VERTICES_PER_P * sizeof(long));
-
-        bsp_push_reg(layer[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(next_layer[i], MAX_NR_VERTICES_PER_P * sizeof(long));
-        bsp_push_reg(deltas[i], MAX_NR_VERTICES_PER_P * sizeof(long double));
-        bsp_push_reg(next_deltas[i], MAX_NR_VERTICES_PER_P * sizeof(long double));
-    }
+    long double **deltas = allocate_and_register_matrix_double(0);
+    long double **next_deltas = allocate_and_register_matrix_double(0);
+    long **next_layer = allocate_and_register_matrix(-1);
+    long **layer = allocate_and_register_matrix(-1);
 
     bsp_sync();
 
