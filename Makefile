@@ -9,14 +9,14 @@ EXECUTABLES := $(SCRIPTS:%.c=%)
 SRC_DIR := src
 INCLUDE_DIR := include
 
-dependency: $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
+dependency: $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c 
 	$(CC) $(CFLAGS) -o $@ $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-test: $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
-	$(CC) $(CFLAGS) -o test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(LFLAGS)
+test: $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c
+	$(CC) $(CFLAGS) -o test $(SRC_DIR)/test.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c $(LFLAGS)
 
-time: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
-	$(CC) $(CFLAGS) -o time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(LFLAGS)
+time: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c
+	$(CC) $(CFLAGS) -o time $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c $(LFLAGS)
 
 PARALLEL = $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c
 

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <time.h>
 #include "../include/Args.h"
 #include "../include/Graph.h"
 
@@ -7,7 +8,7 @@ extern Args* args;
 Graph* graph;
 
 
-short **generate_symmetric_matrix() {
+short **generate_symmetric_mat() {
     srand(time(NULL));
     short **matrix = (short **) malloc(args->nr_vertices * sizeof(short *));
 
@@ -29,7 +30,7 @@ short **generate_symmetric_matrix() {
 }
 
 
-short **fill_buffer(short graph[args->nr_vertices][args->nr_vertices]) {
+short **fill_buf(short graph[args->nr_vertices][args->nr_vertices]) {
     short **matrix = (short **) malloc(args->nr_vertices * sizeof(short *));
 
     for (long i = 0; i < args->nr_vertices; ++i) {
@@ -49,7 +50,7 @@ short **fill_buffer(short graph[args->nr_vertices][args->nr_vertices]) {
 }
 
 
-void free_matrix(short ***M, long nr_rows) {
+void free_mat(short ***M, long nr_rows) {
     short **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
@@ -64,7 +65,7 @@ void free_matrix(short ***M, long nr_rows) {
 }
 
 
-void free_matrix_long(long ***M, long nr_rows) {
+void free_mat_long(long ***M, long nr_rows) {
     long **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
@@ -79,7 +80,7 @@ void free_matrix_long(long ***M, long nr_rows) {
 }
 
 
-void free_matrix_double(long double ***M, long nr_rows) {
+void free_mat_double(long double ***M, long nr_rows) {
     long double **matrix = *M;
 
     for (int i = 0; i < nr_rows; ++i) {
@@ -96,13 +97,13 @@ void free_matrix_double(long double ***M, long nr_rows) {
 
 void generate_graph() {
     graph = (Graph*) malloc(sizeof(Graph));
-    graph->adjacency_matrix = generate_symmetric_matrix();
+    graph->adjacency_matrix = generate_symmetric_mat();
 }
 
 
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
     graph = (Graph*) malloc(sizeof(Graph));
-    graph->adjacency_matrix = fill_buffer(matrix);
+    graph->adjacency_matrix = fill_buf(matrix);
 }
 
 
@@ -112,18 +113,18 @@ void free_graph() {
     }
 
     if (graph->adjacency_matrix != NULL) {
-        free_matrix(&(graph->adjacency_matrix), args->nr_vertices);
+        free_mat(&(graph->adjacency_matrix), args->nr_vertices);
     }
 
     if (graph->distances != NULL) {
-        free_matrix_long(&(graph->distances), args->nr_vertices);
+        free_mat_long(&(graph->distances), args->nr_vertices);
     }
 
     if (graph->sigmas != NULL) {
-        free_matrix_long(&(graph->sigmas), args->nr_vertices);
+        free_mat_long(&(graph->sigmas), args->nr_vertices);
     }
 
     if (graph->deltas != NULL) {
-        free_matrix_double(&(graph->deltas), args->nr_vertices);
+        free_mat_double(&(graph->deltas), args->nr_vertices);
     }
 }

@@ -7,14 +7,17 @@
 #include "../include/bfs.h"
 #include "../include/Node.h"
 #include "../include/Args.h"
+#include "../include/Graph.h"
 
 
 extern Args* args;
+extern Graph* graph;
+
 long MAX_NR_VERTICES_PER_P;
 long source = 0;
 
 // A matrix representation of the graph, vertex partitioned.
-extern short **adjacency_matrix;
+//extern short **adjacency_matrix;
 long **all_distances;
 
 
@@ -57,7 +60,6 @@ void parallel_bfs() {
     bsp_begin(args->nr_processors);
 
     long current_process_id = bsp_pid();
-
 
     // Variable that keeps track of if processors have anything left to send.
     short done[args->nr_processors];
@@ -109,7 +111,7 @@ void parallel_bfs() {
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    if (adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour % args->nr_processors][get_index(neighbour)] < 0) {
+                    if (graph->adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour % args->nr_processors][get_index(neighbour)] < 0) {
                         distances[neighbour % args->nr_processors][get_index(neighbour)] = level;
                         short dest_proc = neighbour % args->nr_processors;
 

@@ -5,6 +5,7 @@
 #include "../include/parallel_bfs.h"
 #include "../include/dependency.h"
 #include "../include/Args.h"
+#include "../include/Graph.h"
 
 #define RED     "\x1b[31m"
 #define GREEN   "\x1b[32m"
@@ -130,7 +131,7 @@ void first_test(int argc, char**argv) {
 
     args->nr_vertices = 7;
 
-    short graph[7][7] = {
+    short adjacency[7][7] = {
         {0, 1, 1, 1, 0, 0, 0},
         {1, 0, 0, 0, 1, 0, 0},
         {1, 0, 0, 0, 0, 1, 0},
@@ -140,7 +141,8 @@ void first_test(int argc, char**argv) {
         {0, 0, 0, 0, 1, 1, 0},
     };
 
-    adjacency_matrix = fill_buffer(graph);
+    construct_graph(adjacency);
+
     long expected[] = {0, 1, 1, 1, 2, 2, 3};
     long ps[] = {1, 7};
     p_count = 2;
@@ -154,7 +156,7 @@ void first_test(int argc, char**argv) {
 
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_matrix(&adjacency_matrix, args->nr_vertices);
+    free_graph();
     printf("\n\n");
 }
 

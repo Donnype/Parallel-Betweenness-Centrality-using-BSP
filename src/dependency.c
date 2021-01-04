@@ -3,15 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "../include/Args.h"
 #include "../include/bfs.h"
 #include "../include/parallel_bfs.h"
+#include "../include/Args.h"
+#include "../include/Graph.h"
 
 
 long MAX_NR_VERTICES_PER_P;
 extern Args* args;
+extern Graph* graph;
 
-extern short **adjacency_matrix;
+//extern short **adjacency_matrix;
 extern long source;
 
 long **all_sigmas;
@@ -61,7 +63,7 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
 void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
     // Collect all neighbours of the vector and to which processor they should be sent.
     for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-        if (adjacency_matrix[neighbour][vertex] <= 0) {
+        if (graph->adjacency_matrix[neighbour][vertex] <= 0) {
             continue;
         }
 
@@ -293,7 +295,7 @@ long double** parallel_dependency(long **distances, long **sigmas) {
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
                     short dest_proc = neighbour % args->nr_processors;
 
-                    if (adjacency_matrix[neighbour][vertex] > 0 && distances[dest_proc][get_index(neighbour)] == d - 1) {
+                    if (graph->adjacency_matrix[neighbour][vertex] > 0 && distances[dest_proc][get_index(neighbour)] == d - 1) {
                         if (deltas[dest_proc][get_index(neighbour)] == 0) {
                             next_layer[dest_proc][counters[dest_proc]] = neighbour;
                             counters[dest_proc]++;
