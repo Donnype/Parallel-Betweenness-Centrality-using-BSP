@@ -16,9 +16,9 @@ extern Graph* graph;
 long source = 0;
 
 
-short all_null(long vec[args->nr_processors]) {
+short all(long vec[args->nr_processors], long value) {
     for (int i = 0; i < args->nr_processors; ++i) {
-        if (vec[i] != 0) {
+        if (vec[i] != value) {
             return 0;
         }
     }
@@ -34,7 +34,7 @@ long get_index(long vertex) {
 }
 
 
-long ** allocate_and_register_matrix(long value) {
+long ** allocate_and_register_matrix(long value, bool push_register) {
     long ** matrix = (long **) malloc(args->nr_processors * sizeof(long *));
 
     for (int i = 0; i < args->nr_processors; ++i) {
@@ -44,7 +44,9 @@ long ** allocate_and_register_matrix(long value) {
             memset(matrix[i], value, args->vertices_per_proc * sizeof(long));
         }
 
-        bsp_push_reg(matrix[i], args->vertices_per_proc * sizeof(long));
+        if (push_register) {
+            bsp_push_reg(matrix[i], args->vertices_per_proc * sizeof(long));
+        }
     }
 
     return matrix;
@@ -57,20 +59,19 @@ void parallel_bfs() {
     long current_process_id = bsp_pid();
 
     // Variable that keeps track of if processors have anything left to send.
-    short done[args->nr_processors];
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        done[i] = 0;
-        bsp_push_reg(&done[i], sizeof(short));
-    }
-
+    long done[args->nr_processors];
     // Variable that keeps track of the length of the message to send.
     long counters[args->nr_processors];
 
     // Allocate and register all the relevant variables.
-    long **neighbourhood = allocate_and_register_matrix(-1);
-    long **next_neighbourhoods = allocate_and_register_matrix(-1);
-    long **distances = allocate_and_register_matrix(-1);
+    long **neighbourhood = allocate_and_register_matrix(-1, true);
+    long **next_neighbourhoods = allocate_and_register_matrix(-1, true);
+    long **distances = allocate_and_register_matrix(-1, true);
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        done[i] = 0;
+        bsp_push_reg(&done[i], sizeof(long));
+    }
 
     bsp_sync();
 
@@ -106,21 +107,27 @@ void parallel_bfs() {
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    if (graph->adjacency_matrix[neighbour][vertex] > 0 && distances[neighbour % args->nr_processors][get_index(neighbour)] < 0) {
-                        short dest_proc = neighbour % args->nr_processors;
-
-                        distances[dest_proc][get_index(neighbour)] = level;
-                        next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
-
-                        // Keep track of the length of the vector that will be sent to dest_proc.
-                        counters[dest_proc]++;
+                    if (graph->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+                        continue;
                     }
+
+                    short dest_proc = neighbour % args->nr_processors;
+
+                    distances[dest_proc][get_index(neighbour)] = level;
+                    next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+
+                    // Keep track of the length of the vector that will be sent to dest_proc.
+                    counters[dest_proc]++;
                 }
             }
         }
 
+        if (level == args->nr_vertices - 1) {
+            break;
+        }
+
         // Does the current processor have anything to send, or is it done at this level?
-        done[current_process_id] = all_null(counters);
+        done[current_process_id] = all(counters, 0);
 
         for (int i = 0; i < args->nr_processors; ++i) {
             // Append the vectors with a -1 to denote the end if they are smaller than the maximum size.
@@ -131,21 +138,13 @@ void parallel_bfs() {
 
             // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
             bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
-            bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(short));
+            bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(long));
         }
 
         bsp_sync();
 
         // Check if all the processors are done and if so, move on.
-        short all_done = 1;
-
-        for (int i = 0; i < args->nr_processors; ++i) {
-            if (done[i] == 0) {
-                all_done = 0;
-            }
-        }
-
-        if (all_done == 1 || level == args->nr_vertices - 1) {
+        if (all(done, 1)) {
             break;
         }
     }

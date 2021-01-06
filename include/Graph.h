@@ -18,5 +18,8 @@ void generate_graph();
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
 void clean_graph_data();
 void free_graph();
+void print_graph_values(long **matrix);
+void print_graph_values_LF(long double **matrix);
+void print_graph();
 
 #endif

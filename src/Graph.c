@@ -115,3 +115,34 @@ void free_graph() {
     free(graph);
 }
 
+
+void print_graph_values(long **matrix) {
+    for (int i = 0; i < args->vertices_per_proc; ++i) {
+        for (int j = 0; j < args->nr_processors; ++j) {
+            printf("%ld ", matrix[j][i]);
+        }
+    }
+    printf("\n");
+}
+
+
+void print_graph_values_LF(long double **matrix) {
+    for (int i = 0; i < args->vertices_per_proc; ++i) {
+        for (int j = 0; j < args->nr_processors; ++j) {
+            printf("%LF ", matrix[j][i]);
+        }
+    }
+    printf("\n");
+}
+
+
+void print_graph() {
+    printf("distances \n");
+    print_graph_values(graph->distances);
+
+    printf("sigmas \n");
+    print_graph_values(graph->sigmas);
+
+    printf("deltas \n");
+    print_graph_values_LF(graph->deltas);
+}

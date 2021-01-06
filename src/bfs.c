@@ -14,17 +14,12 @@ extern Graph* graph;
 
 
 void print_matrix(short **matrix) {
-    printf("Two Dimensional array elements:\n\n");
-
     for (long i = 0; i < args->nr_vertices; i++) {
         for (long j = 0; j < args->nr_vertices; j++) {
             printf("%i ", matrix[i][j]);
-            if (j == args->nr_vertices - 1) {
-                printf("\n");
-            }
         }
+        printf("\n");
     }
-
     printf("\n");
 }
 
