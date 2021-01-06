@@ -37,19 +37,19 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
     for (int proc = 0; proc < args->nr_processors; ++proc) {
         for (long index = 0; index < args->vertices_per_proc; index++) {
             long vertex = neighbourhood[proc][index];
-            long frequency = next_sigmas[proc][index];
 
-            // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
             if (vertex < 0) {
                 break;
             }
+
+            long frequency = next_sigmas[proc][index];
 
             // Skip the vertex if we have seen it before.
             if (own_distances[get_index(vertex)] >= 0) {
                 continue;
             }
 
-            // Collect the number of shortest paths to the vertex.
+            // The number of shortest paths to a vertex is the sum of shortest paths to its predecessors.
             own_sigmas[get_index(vertex)] += frequency;
         }
     }
@@ -136,9 +136,7 @@ void parallel_sigmas() {
                     continue;
                 }
 
-                // Keep track of the distances.
                 own_distances[get_index(vertex)] = level - 1;
-
                 collect_neighbours(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level);
             }
         }
@@ -217,15 +215,7 @@ void parallel_dependency() {
     bsp_sync();
 
     // finding the first vertex with the largest distance
-    long max_distance = 0;
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        for (long j = 0; j < args->vertices_per_proc; j++) {
-            if (graph->distances[i][j] > max_distance) {
-                max_distance = graph->distances[i][j];
-            }
-        }
-    }
+    long max_distance = get_max_distance();
 
     long double* own_deltas = (long double *) calloc(args->vertices_per_proc, sizeof(long double));
     short* own_checked = (short *) calloc(args->vertices_per_proc, sizeof(short));
@@ -265,7 +255,6 @@ void parallel_dependency() {
             for (long index = 0; index < args->vertices_per_proc; index++) {
                 long vertex = layer[proc][index];
 
-                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
                 if (vertex < 0) {
                     break;
                 }

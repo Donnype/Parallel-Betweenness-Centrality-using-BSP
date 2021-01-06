@@ -16,6 +16,7 @@ typedef struct Graph {
 
 void generate_graph();
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
+long get_max_distance();
 void clean_graph_data();
 void free_graph();
 void print_graph_values(long **matrix);

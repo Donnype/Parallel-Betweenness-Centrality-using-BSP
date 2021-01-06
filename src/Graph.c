@@ -103,6 +103,21 @@ void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
 }
 
 
+long get_max_distance() {
+    long max_distance = 0;
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        for (long j = 0; j < args->vertices_per_proc; j++) {
+            if (graph->distances[i][j] > max_distance) {
+                max_distance = graph->distances[i][j];
+            }
+        }
+    }
+
+    return max_distance;
+}
+
+
 void free_graph() {
     if (graph == NULL) {
         return;
