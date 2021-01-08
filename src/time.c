@@ -175,9 +175,9 @@ int main(int argc, char **argv) {
         print_matrix(graph->adjacency_matrix);
     }
 
-//    return bfs(argc, argv);
-    int val = seq_bfs();
-//    int val = betweenness(argc, argv);
+//    int val = bfs(argc, argv);
+//    int val = seq_bfs();
+    int val = betweenness(argc, argv);
 
     free_graph();
     free(args);

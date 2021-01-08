@@ -85,21 +85,27 @@ void clean_graph_data() {
 }
 
 
-void generate_graph() {
-    graph = (Graph*) malloc(sizeof(Graph));
-    graph->adjacency_matrix = generate_symmetric_mat();
+void initialize_properties() {
     graph->distances = NULL;
     graph->sigmas = NULL;
     graph->deltas = NULL;
+    graph->is_sparse = NULL;
+    graph->adjacency_lists = NULL;
+    graph->degrees = NULL;
+}
+
+
+void generate_graph() {
+    graph = (Graph*) malloc(sizeof(Graph));
+    graph->adjacency_matrix = generate_symmetric_mat();
+    initialize_properties();
 }
 
 
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = fill_buf(matrix);
-    graph->distances = NULL;
-    graph->sigmas = NULL;
-    graph->deltas = NULL;
+    initialize_properties();
 }
 
 
@@ -118,6 +124,30 @@ long get_max_distance() {
 }
 
 
+void to_sparse() {
+    graph->adjacency_lists = (long **) malloc(args->nr_vertices * sizeof(long *));
+    graph->degrees = (long *) calloc(args->nr_vertices, sizeof(long));
+    int step = 5;
+
+    for (int j = 0; j < args->nr_vertices; ++j) {
+        for (int i = 0; i < args->nr_vertices; ++i) {
+            if (graph->adjacency_matrix[i][j] == 0) {
+                continue;
+            }
+
+            if (graph->degrees[j] % step == 0) {
+                graph->adjacency_lists[j] = realloc(graph->adjacency_lists[j], (graph->degrees[j] + step) * sizeof(long));
+            }
+
+            graph->adjacency_lists[j][graph->degrees[j]] = i;
+            graph->degrees[j] += 1;
+        }
+    }
+
+    graph->is_sparse = true;
+}
+
+
 void free_graph() {
     if (graph == NULL) {
         return;
@@ -125,6 +155,10 @@ void free_graph() {
 
     if (graph->adjacency_matrix != NULL) {
         free_matrix(&(graph->adjacency_matrix), args->nr_vertices);
+    }
+
+    if (graph->adjacency_lists != NULL) {
+        free_matrix_long(&(graph->adjacency_lists), args->nr_vertices);
     }
 
     free(graph);

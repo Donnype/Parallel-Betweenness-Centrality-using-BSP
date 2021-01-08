@@ -120,6 +120,63 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
 }
 
 
+void test_to_sparse() {
+    printf("Performing to sparse test on 7x7 adjacency matrix. \n\n");
+
+    args->nr_vertices = 7;
+
+    short adjacency[7][7] = {
+        {0, 1, 1, 1, 0, 0, 0},
+        {1, 0, 0, 0, 1, 0, 0},
+        {1, 0, 0, 0, 0, 1, 0},
+        {1, 0, 0, 0, 0, 1, 0},
+        {0, 1, 0, 0, 0, 0, 1},
+        {0, 0, 1, 1, 0, 0, 1},
+        {0, 0, 0, 0, 1, 1, 0},
+    };
+
+    long expected_sparse[7][3] = {
+            {1, 2, 3},
+            {0, 4},
+            {0, 5},
+            {0, 5},
+            {1, 6},
+            {2, 3, 6},
+            {4, 5},
+    };
+
+    long expected_degrees[7] = {3, 2, 2, 2, 2, 3, 2};
+
+    construct_graph(adjacency);
+    to_sparse();
+
+    if (!graph->is_sparse) {
+        sprintf(out_text, "Matrix is_sparse flag is not set to true!");
+        print_failure();
+    }
+
+    for (int j = 0; j < args->nr_vertices; ++j) {
+        if (graph->degrees[j] != expected_degrees[j]) {
+            sprintf(out_text, "Degrees index %i was wrong: %li != %li", j, graph->degrees[j], expected_degrees[j]);
+            print_failure();
+        }
+
+        for (int i = 0; i < graph->degrees[j]; ++i) {
+            if (graph->adjacency_lists[j][i] != expected_sparse[j][i]) {
+                sprintf(out_text, "Column %i, row %i not as expected: %li != %li", j, i, graph->adjacency_lists[j][i], expected_sparse[j][i]);
+                print_failure();
+                continue;
+            }
+
+            sprintf(out_text, "Column %i row %i is indeed %li", j, i, graph->adjacency_lists[j][i]);
+            print_success();
+        }
+    }
+
+    free_graph();
+}
+
+
 void first_test(int argc, char**argv) {
     printf("Performing first test with 7x7 graph. \n\n");
 
@@ -226,6 +283,8 @@ void third_test(int argc, char**argv) {
 
 int main(int argc, char **argv) {
     read_args(argc, argv);
+    test_to_sparse();
+    printf("\n");
     first_test(argc, argv);
     printf("\n");
     second_test(argc, argv);

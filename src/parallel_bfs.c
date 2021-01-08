@@ -97,7 +97,7 @@ void parallel_bfs() {
                     break;
                 }
 
-                // Skip the vertex if we have seen it before.
+                // Skip the vertex if we have received it before.
                 if (own_distances[get_index(vertex)] >= 0) {
                     continue;
                 }
@@ -153,19 +153,7 @@ void parallel_bfs() {
     for (int i = 0; i < args->nr_processors; ++i) {
         bsp_put(i, own_distances, distances[current_process_id], 0, args->vertices_per_proc * sizeof(long));
     }
-
     bsp_sync();
-
-    // Depending on a CLI argument, print the distances found in processor 0.
-    if (args->output && current_process_id == 0) {
-        for (int i = 0; i < args->vertices_per_proc; ++i) {
-            for (int j = 0; j < args->nr_processors; ++j) {
-                printf("%ld ", distances[j][i]);
-            }
-        }
-        printf("\n");
-    }
-
 
     // Free the variables.
     free_matrix_long(&neighbourhood, args->nr_processors);
@@ -174,6 +162,11 @@ void parallel_bfs() {
     bsp_end();
 
     graph->distances = distances;
+
+    // Depending on a CLI argument, print the distances found in processor 0.
+    if (args->output && current_process_id == 0) {
+        print_graph_values(graph->distances);
+    }
 }
 
 
