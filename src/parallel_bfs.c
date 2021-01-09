@@ -95,13 +95,13 @@ void parallel_bfs() {
     long *own_distances = (long *) malloc(args->vertices_per_proc * sizeof(long));
     memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
 
-    for (int j = 0; j < args->batch_size; ++j) {
+    for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
         long **distances = allocate_and_register_matrix(-1, true);
         bsp_sync();
 
-        if (current_process_id == batch[j]->source % args->nr_processors) {
+        if (current_process_id == batch[batch_nr]->source % args->nr_processors) {
             // We assume that the src vertex was received from processor 0.
-            neighbourhood[current_process_id][0] = batch[j]->source;
+            neighbourhood[current_process_id][0] = batch[batch_nr]->source;
         }
 
         for (long level = 1; level < args->nr_vertices; ++level) {
@@ -126,13 +126,13 @@ void parallel_bfs() {
                     own_distances[get_index(vertex)] = level - 1;
 
                     // Collect all neighbours of the vector and to which processor they should be sent.
-                    if (batch[j]->is_sparse) {
-                        sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level, j);
+                    if (batch[batch_nr]->is_sparse) {
+                        sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level, batch_nr);
                         continue;
                     }
 
                     for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                        if (batch[j]->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+                        if (batch[batch_nr]->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
                             continue;
                         }
 
@@ -180,12 +180,22 @@ void parallel_bfs() {
         }
         bsp_sync();
 
-        batch[j]->distances = distances;
+        batch[batch_nr]->distances = distances;
+
+        for (int i = 0; i < args->nr_processors; ++i) {
+            bsp_pop_reg(distances[i]);
+        }
 
         // Depending on a CLI argument, print the distances found in processor 0.
         if (args->output && current_process_id == 0) {
-            print_graph_values(batch[j]->distances);
+            print_graph_values(batch[batch_nr]->distances);
         }
+    }
+
+    for (int i = 0; i < args->nr_processors; ++i) {
+        bsp_pop_reg(&done[i]);
+        bsp_pop_reg(neighbourhood[i]);
+        bsp_pop_reg(next_neighbourhoods[i]);
     }
 
     // Free the variables.

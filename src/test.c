@@ -93,13 +93,13 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
 }
 
 void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], long double expected_deltas[]) {
-    for (int j = 0; j < args->batch_size; ++j) {
-        for (int i = 0; i < p_count; ++i) {
-            args->nr_processors = ps[i];
-            args->vertices_per_proc = args->nr_vertices / args->nr_processors;
+    for (int i = 0; i < p_count; ++i) {
+        args->nr_processors = ps[i];
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
-            parallel_betweenness_wrap(argc, argv);
+        parallel_betweenness_wrap(argc, argv);
 
+        for (int j = 0; j < args->batch_size; ++j) {
             int failed = check_long(batch[j]->sigmas, expected_sigmas);
 
             if (failed == 1) {
@@ -113,16 +113,16 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             failed = check_double(batch[j]->deltas, expected_deltas);
 
             if (failed == 1) {
-                sprintf(out_text, "Betweenness test deltas failed for P = %ld", args->nr_processors);
+                sprintf(out_text, "Betweenness test deltas failed for batch %i and P = %ld", i, args->nr_processors);
                 print_failure();
             } else {
-                sprintf(out_text, "Betweenness test deltas succeeded for P = %ld", args->nr_processors);
+                sprintf(out_text, "Betweenness test deltas succeeded for batch %i and P = %ld", i, args->nr_processors);
                 print_success();
             }
-
-            clean_batch_data();
-            printf("\n");
         }
+
+        clean_batch_data();
+        printf("\n");
     }
 }
 
