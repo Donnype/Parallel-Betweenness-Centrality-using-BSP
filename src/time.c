@@ -26,11 +26,8 @@ double time_bfs_linked() {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
-
     long *d = bfs_linked(0);
-
     clock_gettime(CLOCK_REALTIME, &end);
-
     free(d);
 
     return diff(start, end);
@@ -41,9 +38,7 @@ double time_bfs_vec() {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
-
     bfs_vec(0);
-
     clock_gettime(CLOCK_REALTIME, &end);
 
     if (args->output) {
@@ -62,9 +57,7 @@ double time_bfs_parallel(int argc, char **argv) {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
-
     parallel_wrap(argc, argv);
-
     clock_gettime(CLOCK_REALTIME, &end);
 
     return diff(start, end);
@@ -75,9 +68,7 @@ double time_betweenness_parallel(int argc, char **argv) {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
-
     parallel_betweenness_wrap(argc, argv);
-
     clock_gettime(CLOCK_REALTIME, &end);
 
     return diff(start, end);

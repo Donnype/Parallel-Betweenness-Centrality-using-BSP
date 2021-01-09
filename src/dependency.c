@@ -42,7 +42,6 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
                 break;
             }
 
-            long frequency = next_sigmas[proc][index];
 
             // Skip the vertex if we have seen it before.
             if (own_distances[get_index(vertex)] >= 0) {
@@ -50,7 +49,7 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
             }
 
             // The number of shortest paths to a vertex is the sum of shortest paths to its predecessors.
-            own_sigmas[get_index(vertex)] += frequency;
+            own_sigmas[get_index(vertex)] += next_sigmas[proc][index];
         }
     }
 }
@@ -315,15 +314,14 @@ void parallel_dependency() {
         for (long proc = 0; proc < args->nr_processors; ++proc) {
             for (long index = 0; index < args->vertices_per_proc; index++) {
                 long vertex = layer[proc][index];
-                long double delta_part = next_deltas[proc][index];
 
                 // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
                 if (vertex < 0) {
                     break;
                 }
 
-                // Collect the number of shortest paths to the vertex.
-                own_deltas[get_index(vertex)] += delta_part;
+                // Sum the deltas received per vertex.
+                own_deltas[get_index(vertex)] += next_deltas[proc][index];
             }
         }
 
