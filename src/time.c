@@ -175,6 +175,10 @@ int main(int argc, char **argv) {
         print_matrix(graph->adjacency_matrix);
     }
 
+    if (args->set_sparse) {
+        to_sparse();
+    }
+
 //    int val = bfs(argc, argv);
 //    int val = seq_bfs();
     int val = betweenness(argc, argv);

@@ -200,11 +200,19 @@ void first_test(int argc, char**argv) {
 
     test_bfs(argc, argv, ps, expected);
 
-    printf("\n");
+    printf("\nPerforming the test sparse.\n");
+
+    to_sparse();
+    test_bfs(argc, argv, ps, expected);
 
     long expected_sigmas[] = {1, 1, 1, 1, 1, 2, 3};
     long double expected_deltas[] = {0.0, 4.0/3.0, 5.0/6.0, 5.0/6.0, 1.0/3.0, 2.0/3.0, 0.0};
 
+    graph->is_sparse = false;
+    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    printf("\nPerforming the test sparse.\n");
+    graph->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();
@@ -236,11 +244,20 @@ void second_test(int argc, char**argv) {
 
     test_bfs(argc, argv, ps, expected);
 
+    printf("\nPerforming the test sparse.\n");
+
+    to_sparse();
+    test_bfs(argc, argv, ps, expected);
     printf("\n");
 
     long expected_sigmas[] = {1, 2, 1, 1, 1, 2, 1, 2, 1, 3};
     long double expected_deltas[] = {0.0, 0.0, 1.0, 1.0/2.0, 4.0/3.0, 0.0, 5.0/6.0, 0.0, 1.0/3.0, 0.0};
 
+    graph->is_sparse = false;
+    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    printf("\nPerforming the test sparse.\n");
+    graph->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();
@@ -270,12 +287,20 @@ void third_test(int argc, char**argv) {
     p_count = 2;
 
     test_bfs(argc, argv, ps, expected);
+    printf("\nPerforming the test sparse.\n");
 
+    to_sparse();
+    test_bfs(argc, argv, ps, expected);
     printf("\n");
 
     long expected_sigmas[] = {1, 1, 2, 2, 1, 1, 1, 1, 3};
     long double expected_deltas[] = {0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0};
 
+    graph->is_sparse = false;
+    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    printf("\nPerforming the test sparse.\n");
+    graph->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_graph();

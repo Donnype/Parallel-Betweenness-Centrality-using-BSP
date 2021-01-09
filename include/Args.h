@@ -11,6 +11,7 @@ typedef struct Args {
     long nr_processors;
     long vertices_per_proc;
     double runs;
+    bool set_sparse;
     bool output;
     bool print_matrix;
     bool test;

@@ -56,7 +56,36 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
 }
 
 
+void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
+    // Collect all neighbours of the vector and to which processor they should be sent.
+    for (long i = 0; i < graph->degrees[vertex]; ++i) {
+        long neighbour = graph->adjacency_lists[vertex][i];
+        short dest_proc = neighbour % args->nr_processors;
+
+        // We count how many times we send a vertex the first time for the sigmas.
+        if (distances[dest_proc][get_index(neighbour)] == level) {
+            sigmas[dest_proc][get_index(neighbour)] += own_sigmas[get_index(vertex)];
+
+            continue;
+        }
+
+        if (distances[dest_proc][get_index(neighbour)] < 0) {
+            sigmas[dest_proc][get_index(neighbour)] = own_sigmas[get_index(vertex)];
+            distances[dest_proc][get_index(neighbour)] = level;
+            next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+
+            // Keep track of the length of the vector that will be sent to dest_proc.
+            counters[dest_proc]++;
+        }
+    }
+}
+
+
 void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
+    if (graph->is_sparse) {
+        return collect_neighbours_sparse(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level);
+    }
+
     // Collect all neighbours of the vector and to which processor they should be sent.
     for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
         if (graph->adjacency_matrix[neighbour][vertex] <= 0) {
@@ -80,6 +109,55 @@ void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long 
             // Keep track of the length of the vector that will be sent to dest_proc.
             counters[dest_proc]++;
         }
+    }
+}
+
+
+void collect_deltas_sparse(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
+    for (long i = 0; i < graph->degrees[vertex]; ++i) {
+        long neighbour = graph->adjacency_lists[vertex][i];
+        short dest_proc = neighbour % args->nr_processors;
+        long nb_index = get_index(neighbour);
+
+        if (graph->adjacency_matrix[neighbour][vertex] <= 0 || graph->distances[dest_proc][nb_index] != d - 1) {
+            continue;
+        }
+
+        if (deltas[dest_proc][nb_index] == 0) {
+            next_layer[dest_proc][counters[dest_proc]] = neighbour;
+            counters[dest_proc]++;
+        }
+
+        long double enumerator = (long double) graph->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
+        long double frac = enumerator / denominator;
+        deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
+    }
+}
+
+
+void collect_deltas(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
+    if (graph->is_sparse) {
+        return collect_deltas_sparse(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex);
+    }
+
+    for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
+        short dest_proc = neighbour % args->nr_processors;
+        long nb_index = get_index(neighbour);
+
+        if (graph->adjacency_matrix[neighbour][vertex] <= 0 || graph->distances[dest_proc][nb_index] != d - 1) {
+            continue;
+        }
+
+        if (deltas[dest_proc][nb_index] == 0) {
+            next_layer[dest_proc][counters[dest_proc]] = neighbour;
+            counters[dest_proc]++;
+        }
+
+        long double enumerator = (long double) graph->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
+        long double frac = enumerator / denominator;
+        deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
     }
 }
 
@@ -230,8 +308,6 @@ void parallel_dependency() {
         }
     }
 
-    layer[current_process_id][counters[current_process_id]] = -1;
-
     // iterate over the levels, beginning at the back
     for (long d = max_distance; d > 0; d--) {
         memset(counters, 0, args->nr_processors * sizeof(long));
@@ -266,24 +342,7 @@ void parallel_dependency() {
 
                 own_checked[get_index(vertex)] = 1;
 
-                for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    short dest_proc = neighbour % args->nr_processors;
-                    long nb_index = get_index(neighbour);
-
-                    if (graph->adjacency_matrix[neighbour][vertex] <= 0 || graph->distances[dest_proc][nb_index] != d - 1) {
-                        continue;
-                    }
-
-                    if (deltas[dest_proc][nb_index] == 0) {
-                        next_layer[dest_proc][counters[dest_proc]] = neighbour;
-                        counters[dest_proc]++;
-                    }
-
-                    long double enumerator = (long double) graph->sigmas[dest_proc][nb_index];
-                    long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
-                    long double frac = enumerator / denominator;
-                    deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
-                }
+                collect_deltas(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex);
             }
         }
 

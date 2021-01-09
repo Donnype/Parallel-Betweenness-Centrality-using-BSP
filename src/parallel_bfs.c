@@ -53,6 +53,25 @@ long ** allocate_and_register_matrix(long value, bool push_register) {
 }
 
 
+void sparse_collect_neighbours(long **next_neighbourhoods, long counters[], long **distances, long vertex, long level) {
+    for (long i = 0; i < graph->degrees[vertex]; ++i) {
+        long neighbour = graph->adjacency_lists[vertex][i];
+
+        if (distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+            continue;
+        }
+
+        short dest_proc = neighbour % args->nr_processors;
+
+        distances[dest_proc][get_index(neighbour)] = level;
+        next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+
+        // Keep track of the length of the vector that will be sent to dest_proc.
+        counters[dest_proc]++;
+    }
+}
+
+
 void parallel_bfs() {
     bsp_begin(args->nr_processors);
 
@@ -106,6 +125,11 @@ void parallel_bfs() {
                 own_distances[get_index(vertex)] = level - 1;
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
+                if (graph->is_sparse) {
+                    sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level);
+                    continue;
+                }
+
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
                     if (graph->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
                         continue;

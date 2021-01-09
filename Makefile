@@ -35,8 +35,9 @@ memory_time: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c
 memory_dep: dependency.c bfs.c Node.c
 	$(CC) -std=c99 -Wall -o0 -g -o memory_dep $(SRC_DIR)/dependency.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(LFLAGS)
 
-profile: $(PARALLEL)
-	$(CC) $(CFLAGS) --profile -o profile $(PARALLEL) $(LFLAGS)
+profile: $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c
+	$(CC) $(CFLAGS) --profile -o profile $(SRC_DIR)/time.c $(SRC_DIR)/dependency.c $(SRC_DIR)/parallel_bfs.c $(SRC_DIR)/bfs.c $(SRC_DIR)/Node.c $(SRC_DIR)/Args.c $(SRC_DIR)/Graph.c $(LFLAGS)
+
 
 .PHONY: clean
 

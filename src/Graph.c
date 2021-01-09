@@ -73,14 +73,17 @@ void free_matrix(short ***M, long nr_rows) {
 void clean_graph_data() {
     if (graph->distances != NULL) {
         free_matrix_long(&(graph->distances), args->nr_processors);
+        graph->distances = NULL;
     }
 
     if (graph->sigmas != NULL) {
         free_matrix_long(&(graph->sigmas), args->nr_processors);
+        graph->sigmas = NULL;
     }
 
     if (graph->deltas != NULL) {
         free_matrix_double(&(graph->deltas), args->nr_processors);
+        graph->deltas = NULL;
     }
 }
 
@@ -130,6 +133,8 @@ void to_sparse() {
     int step = 5;
 
     for (int j = 0; j < args->nr_vertices; ++j) {
+        graph->adjacency_lists[j] = NULL;
+
         for (int i = 0; i < args->nr_vertices; ++i) {
             if (graph->adjacency_matrix[i][j] == 0) {
                 continue;
@@ -159,6 +164,10 @@ void free_graph() {
 
     if (graph->adjacency_lists != NULL) {
         free_matrix_long(&(graph->adjacency_lists), args->nr_vertices);
+    }
+
+    if (graph->degrees != NULL) {
+        free(graph->degrees);
     }
 
     free(graph);
