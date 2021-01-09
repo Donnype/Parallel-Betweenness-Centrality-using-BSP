@@ -9,6 +9,7 @@ extern Args *args;
 // A structure that holds the graph information.
 typedef struct Graph {
     short ** adjacency_matrix;
+    long source;
     long ** distances;
     long ** sigmas;
     long double ** deltas;

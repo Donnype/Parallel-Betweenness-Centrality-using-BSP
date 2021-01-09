@@ -76,48 +76,53 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
 
         parallel_wrap(argc, argv);
 
-        int failed = check_long(batch[0]->distances, expected);
-        clean_batch_data();
+        for (int j = 0; j < args->batch_size; ++j) {
+            int failed = check_long(batch[j]->distances, expected);
 
-        if (failed == 1) {
-            sprintf(out_text, "BFS test failed for P = %ld", args->nr_processors);
-            print_failure();
-        } else {
-            sprintf(out_text, "BFS test succeeded for P = %ld", args->nr_processors);
-            print_success();
+            if (failed == 1) {
+                sprintf(out_text, "BFS test failed for batch %i and P = %ld", j, args->nr_processors);
+                print_failure();
+            } else {
+                sprintf(out_text, "BFS test succeeded for batch %i and P = %ld", j, args->nr_processors);
+                print_success();
+            }
         }
+
+        clean_batch_data();
     }
 }
 
 void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], long double expected_deltas[]) {
-    for (int i = 0; i < p_count; ++i) {
-        args->nr_processors = ps[i];
+    for (int j = 0; j < args->batch_size; ++j) {
+        for (int i = 0; i < p_count; ++i) {
+            args->nr_processors = ps[i];
+            args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
-        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
-        parallel_betweenness_wrap(argc, argv);
+            parallel_betweenness_wrap(argc, argv);
 
-        int failed = check_long(batch[0]->sigmas, expected_sigmas);
+            int failed = check_long(batch[j]->sigmas, expected_sigmas);
 
-        if (failed == 1) {
-            sprintf(out_text, "Betweenness test sigmas failed for P = %ld", args->nr_processors);
-            print_failure();
-        } else {
-            sprintf(out_text, "Betweenness test sigmas succeeded for P = %ld", args->nr_processors);
-            print_success();
+            if (failed == 1) {
+                sprintf(out_text, "Betweenness test sigmas failed for batch %i and P = %ld", j, args->nr_processors);
+                print_failure();
+            } else {
+                sprintf(out_text, "Betweenness test sigmas succeeded for batch %i and P = %ld", j, args->nr_processors);
+                print_success();
+            }
+
+            failed = check_double(batch[j]->deltas, expected_deltas);
+
+            if (failed == 1) {
+                sprintf(out_text, "Betweenness test deltas failed for P = %ld", args->nr_processors);
+                print_failure();
+            } else {
+                sprintf(out_text, "Betweenness test deltas succeeded for P = %ld", args->nr_processors);
+                print_success();
+            }
+
+            clean_batch_data();
+            printf("\n");
         }
-
-        failed = check_double(batch[0]->deltas, expected_deltas);
-
-        if (failed == 1) {
-            sprintf(out_text, "Betweenness test deltas failed for P = %ld", args->nr_processors);
-            print_failure();
-        } else {
-            sprintf(out_text, "Betweenness test deltas succeeded for P = %ld", args->nr_processors);
-            print_success();
-        }
-
-        clean_batch_data();
-        printf("\n");
     }
 }
 
@@ -320,6 +325,65 @@ void third_test(int argc, char**argv) {
     free_batch();
 }
 
+
+void test_batched(int argc, char**argv) {
+    printf("Performing batched test with 9x9 graph. \n\n");
+
+    args->nr_vertices = 9;
+    args->batch_size = 4;
+
+    short adjacency[9][9] = {
+        {0, 1, 0, 0, 1, 0, 0, 0, 0},
+        {1, 0, 1, 0, 0, 0, 0, 0, 0},
+        {0, 1, 0, 1, 1, 0, 0, 0, 1},
+        {0, 0, 1, 0, 0, 0, 0, 0, 1},
+        {1, 0, 1, 0, 0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 0, 0, 1, 0, 0},
+        {0, 0, 0, 0, 1, 1, 0, 1, 1},
+        {0, 0, 0, 0, 0, 0, 1, 0, 0},
+        {0, 0, 1, 1, 0, 0, 1, 0, 0}
+    };
+
+    construct_graph(adjacency);
+    to_sparse();
+    create_batch();
+
+    long expected[] = {0, 1, 2, 3, 1, 3, 2, 3, 3};
+    long ps[] = {1, 3};
+    p_count = 2;
+
+    for (int j = 0; j < args->batch_size; ++j) {
+        batch[j]->is_sparse = false;
+    }
+
+    test_bfs(argc, argv, ps, expected);
+    printf("\nPerforming the test sparse.\n");
+
+    for (int j = 0; j < args->batch_size; ++j) {
+        batch[j]->is_sparse = true;
+    }
+    test_bfs(argc, argv, ps, expected);
+    printf("\n");
+
+    long expected_sigmas[] = {1, 1, 2, 2, 1, 1, 1, 1, 3};
+    long double expected_deltas[] = {0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0};
+
+    for (int j = 0; j < args->batch_size; ++j) {
+        batch[j]->is_sparse = false;
+    }
+    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    printf("\nPerforming the test sparse.\n");
+
+    for (int j = 0; j < args->batch_size; ++j) {
+        batch[j]->is_sparse = true;
+    }
+    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    free_batch();
+}
+
+
 int main(int argc, char **argv) {
     read_args(argc, argv);
     args->batch_size = 1;
@@ -332,6 +396,8 @@ int main(int argc, char **argv) {
     second_test(argc, argv);
     printf("\n");
     third_test(argc, argv);
+    printf("\n");
+    test_batched(argc, argv);
 
     free(args);
     return 0;

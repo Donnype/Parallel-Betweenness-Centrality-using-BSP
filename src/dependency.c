@@ -12,7 +12,6 @@
 extern Args* args;
 extern Graph* graph;
 extern Graph** batch;
-extern long source;
 
 
 long double ** allocate_and_register_matrix_double(long double value, bool push_register) {
@@ -191,9 +190,9 @@ void parallel_sigmas() {
     memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
     long *own_sigmas = (long *) calloc(args->vertices_per_proc, sizeof(long));
 
-    if (current_process_id == source % args->nr_processors) {
+    if (current_process_id == batch[0]->source % args->nr_processors) {
         // We assume that the source vertex was received from the processor containing it.
-        neighbourhood[current_process_id][0] = source;
+        neighbourhood[current_process_id][0] = batch[0]->source;
         next_sigmas[current_process_id][0] = 1;
     }
 
@@ -374,7 +373,7 @@ void parallel_dependency() {
 
     bsp_sync();
 
-    deltas[source % args->nr_processors][get_index(source)] = 0.0;
+    deltas[batch[0]->source % args->nr_processors][get_index(batch[0]->source)] = 0.0;
 
     for (int i = 0; i < args->nr_processors; ++i) {
         bsp_pop_reg(deltas[i]);

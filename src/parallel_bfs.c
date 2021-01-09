@@ -14,7 +14,6 @@
 extern Args* args;
 extern Graph* graph;
 extern Graph** batch;
-long source = 0;
 
 
 short all(long vec[args->nr_processors], long value) {
@@ -54,9 +53,9 @@ long ** allocate_and_register_matrix(long value, bool push_register) {
 }
 
 
-void sparse_collect_neighbours(long **next_neighbourhoods, long counters[], long **distances, long vertex, long level) {
-    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
-        long neighbour = batch[0]->adjacency_lists[vertex][i];
+void sparse_collect_neighbours(long **next_neighbourhoods, long counters[], long **distances, long vertex, long level, long batch_nr) {
+    for (long i = 0; i < batch[batch_nr]->degrees[vertex]; ++i) {
+        long neighbour = batch[batch_nr]->adjacency_lists[vertex][i];
 
         if (distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
             continue;
@@ -86,99 +85,108 @@ void parallel_bfs() {
     // Allocate and register all the relevant variables.
     long **neighbourhood = allocate_and_register_matrix(-1, true);
     long **next_neighbourhoods = allocate_and_register_matrix(-1, true);
-    long **distances = allocate_and_register_matrix(-1, true);
 
     for (int i = 0; i < args->nr_processors; ++i) {
         done[i] = 0;
         bsp_push_reg(&done[i], sizeof(long));
     }
 
-    bsp_sync();
-
     // It is convenient to keep track of the distances received by each processor separately.
     long *own_distances = (long *) malloc(args->vertices_per_proc * sizeof(long));
     memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
 
-    if (current_process_id == source % args->nr_processors) {
-        // We assume that the src vertex was received from processor 0.
-        neighbourhood[current_process_id][0] = source;
-    }
+    for (int j = 0; j < args->batch_size; ++j) {
+        long **distances = allocate_and_register_matrix(-1, true);
+        bsp_sync();
 
-    for (long level = 1; level < args->nr_vertices; ++level) {
-        memset(counters, 0, args->nr_processors * sizeof(long));
+        if (current_process_id == batch[j]->source % args->nr_processors) {
+            // We assume that the src vertex was received from processor 0.
+            neighbourhood[current_process_id][0] = batch[j]->source;
+        }
 
-        // We loop over the nodes received from each processor.
-        for (int proc = 0; proc < args->nr_processors; ++proc) {
-            for (long index = 0; index < args->vertices_per_proc; index++) {
-                long vertex = neighbourhood[proc][index];
+        for (long level = 1; level < args->nr_vertices; ++level) {
+            memset(counters, 0, args->nr_processors * sizeof(long));
 
-                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
-                if (vertex < 0) {
-                    break;
-                }
+            // We loop over the nodes received from each processor.
+            for (int proc = 0; proc < args->nr_processors; ++proc) {
+                for (long index = 0; index < args->vertices_per_proc; index++) {
+                    long vertex = neighbourhood[proc][index];
 
-                // Skip the vertex if we have received it before.
-                if (own_distances[get_index(vertex)] >= 0) {
-                    continue;
-                }
+                    // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+                    if (vertex < 0) {
+                        break;
+                    }
 
-                // Keep track of the distances.
-                own_distances[get_index(vertex)] = level - 1;
-
-                // Collect all neighbours of the vector and to which processor they should be sent.
-                if (batch[0]->is_sparse) {
-                    sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level);
-                    continue;
-                }
-
-                for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+                    // Skip the vertex if we have received it before.
+                    if (own_distances[get_index(vertex)] >= 0) {
                         continue;
                     }
 
-                    short dest_proc = neighbour % args->nr_processors;
+                    // Keep track of the distances.
+                    own_distances[get_index(vertex)] = level - 1;
 
-                    distances[dest_proc][get_index(neighbour)] = level;
-                    next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+                    // Collect all neighbours of the vector and to which processor they should be sent.
+                    if (batch[j]->is_sparse) {
+                        sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level, j);
+                        continue;
+                    }
 
-                    // Keep track of the length of the vector that will be sent to dest_proc.
-                    counters[dest_proc]++;
+                    for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
+                        if (batch[j]->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+                            continue;
+                        }
+
+                        short dest_proc = neighbour % args->nr_processors;
+
+                        distances[dest_proc][get_index(neighbour)] = level;
+                        next_neighbourhoods[dest_proc][counters[dest_proc]] = neighbour;
+
+                        // Keep track of the length of the vector that will be sent to dest_proc.
+                        counters[dest_proc]++;
+                    }
                 }
             }
-        }
 
-        if (level == args->nr_vertices - 1) {
-            break;
-        }
-
-        // Does the current processor have anything to send, or is it done at this level?
-        done[current_process_id] = all(counters, 0);
-
-        for (int i = 0; i < args->nr_processors; ++i) {
-            // Append the vectors with a -1 to denote the end if they are smaller than the maximum size.
-            if (counters[i] + 1 < args->vertices_per_proc) {
-                next_neighbourhoods[i][counters[i]] = -1;
-                counters[i]++;
+            if (level == args->nr_vertices - 1) {
+                break;
             }
 
-            // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
-            bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
-            bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(long));
+            // Does the current processor have anything to send, or is it done at this level?
+            done[current_process_id] = all(counters, 0);
+
+            for (int i = 0; i < args->nr_processors; ++i) {
+                // Append the vectors with a -1 to denote the end if they are smaller than the maximum size.
+                if (counters[i] + 1 < args->vertices_per_proc) {
+                    next_neighbourhoods[i][counters[i]] = -1;
+                    counters[i]++;
+                }
+
+                // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
+                bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
+                bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(long));
+            }
+
+            bsp_sync();
+
+            // Check if all the processors are done and if so, move on.
+            if (all(done, 1)) {
+                break;
+            }
         }
 
+        // Distribute the distances of the current processor, that are complete.
+        for (int i = 0; i < args->nr_processors; ++i) {
+            bsp_put(i, own_distances, distances[current_process_id], 0, args->vertices_per_proc * sizeof(long));
+        }
         bsp_sync();
 
-        // Check if all the processors are done and if so, move on.
-        if (all(done, 1)) {
-            break;
+        batch[j]->distances = distances;
+
+        // Depending on a CLI argument, print the distances found in processor 0.
+        if (args->output && current_process_id == 0) {
+            print_graph_values(batch[j]->distances);
         }
     }
-
-    // Distribute the distances of the current processor, that are complete.
-    for (int i = 0; i < args->nr_processors; ++i) {
-        bsp_put(i, own_distances, distances[current_process_id], 0, args->vertices_per_proc * sizeof(long));
-    }
-    bsp_sync();
 
     // Free the variables.
     free_matrix_long(&neighbourhood, args->nr_processors);
@@ -186,13 +194,6 @@ void parallel_bfs() {
     free(own_distances);
 
     bsp_end();
-
-    batch[0]->distances = distances;
-
-    // Depending on a CLI argument, print the distances found in processor 0.
-    if (args->output && current_process_id == 0) {
-        print_graph_values(batch[0]->distances);
-    }
 }
 
 

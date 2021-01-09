@@ -107,6 +107,7 @@ int bfs(int argc, char **argv) {
 
         for (int i = 0; i < args->runs; ++i) {
             ms += time_bfs_parallel(argc, argv);
+            clean_batch_data();
         }
 
         ms = ms / args->runs;
@@ -128,6 +129,7 @@ int betweenness(int argc, char **argv) {
 
         for (int i = 0; i < args->runs; ++i) {
             ms += time_betweenness_parallel(argc, argv);
+            clean_batch_data();
         }
 
         ms = ms / args->runs;
@@ -146,16 +148,16 @@ int main(int argc, char **argv) {
         args->nr_vertices = 10;
 
         short adjacency[10][10] = {
-                {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-                {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
-                {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
-                {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-                {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
-                {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-                {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-                {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
-                {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
-                {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
+            {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
+            {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
+            {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
+            {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
+            {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+            {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
+            {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
+            {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
         };
 
         construct_graph(adjacency);
@@ -163,14 +165,14 @@ int main(int argc, char **argv) {
         generate_graph();
     }
 
+    if (args->set_sparse) {
+        to_sparse();
+    }
+
     create_batch();
 
     if (args->print_matrix == 1) {
         print_matrix(graph->adjacency_matrix);
-    }
-
-    if (args->set_sparse) {
-        to_sparse();
     }
 
 //    int val = bfs(argc, argv);

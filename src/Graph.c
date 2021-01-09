@@ -90,6 +90,7 @@ void clean_graph_data(Graph* g) {
 
 
 void initialize_properties(Graph* g) {
+    g->source = 0;
     g->distances = NULL;
     g->sigmas = NULL;
     g->deltas = NULL;
@@ -195,12 +196,14 @@ void free_batch() {
     for (int i = 0; i < args->batch_size; ++i) {
         clean_graph_data(batch[i]);
     }
+
+    free(batch);
 }
 
 
 void clean_batch_data() {
-    for (int i = 0; i < args->batch_size; ++i) {
-        clean_graph_data(batch[i]);
+    for (int j = 0; j < args->batch_size; ++j) {
+        clean_graph_data(batch[j]);
     }
 }
 
