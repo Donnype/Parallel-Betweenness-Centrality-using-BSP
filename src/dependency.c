@@ -55,10 +55,10 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
 }
 
 
-void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
+void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level, long batch_nr) {
     // Collect all neighbours of the vector and to which processor they should be sent.
-    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
-        long neighbour = batch[0]->adjacency_lists[vertex][i];
+    for (long i = 0; i < batch[batch_nr]->degrees[vertex]; ++i) {
+        long neighbour = batch[batch_nr]->adjacency_lists[vertex][i];
         short dest_proc = neighbour % args->nr_processors;
 
         // We count how many times we send a vertex the first time for the sigmas.
@@ -82,7 +82,7 @@ void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas
 
 void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level, long batch_nr) {
     if (batch[batch_nr]->is_sparse) {
-        return collect_neighbours_sparse(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level);
+        return collect_neighbours_sparse(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level, batch_nr);
     }
 
     // Collect all neighbours of the vector and to which processor they should be sent.
@@ -112,13 +112,13 @@ void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long 
 }
 
 
-void collect_deltas_sparse(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
-    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
-        long neighbour = batch[0]->adjacency_lists[vertex][i];
+void collect_deltas_sparse(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex, long batch_nr) {
+    for (long i = 0; i < batch[batch_nr]->degrees[vertex]; ++i) {
+        long neighbour = batch[batch_nr]->adjacency_lists[vertex][i];
         short dest_proc = neighbour % args->nr_processors;
         long nb_index = get_index(neighbour);
 
-        if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || batch[0]->distances[dest_proc][nb_index] != d - 1) {
+        if (batch[batch_nr]->adjacency_matrix[neighbour][vertex] <= 0 || batch[batch_nr]->distances[dest_proc][nb_index] != d - 1) {
             continue;
         }
 
@@ -127,24 +127,24 @@ void collect_deltas_sparse(long current_process_id, long counters[], long double
             counters[dest_proc]++;
         }
 
-        long double enumerator = (long double) batch[0]->sigmas[dest_proc][nb_index];
-        long double denominator = (long double) batch[0]->sigmas[current_process_id][get_index(vertex)];
+        long double enumerator = (long double) batch[batch_nr]->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) batch[batch_nr]->sigmas[current_process_id][get_index(vertex)];
         long double frac = enumerator / denominator;
         deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
     }
 }
 
 
-void collect_deltas(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
-    if (batch[0]->is_sparse) {
-        return collect_deltas_sparse(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex);
+void collect_deltas(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex, long batch_nr) {
+    if (batch[batch_nr]->is_sparse) {
+        return collect_deltas_sparse(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex, batch_nr);
     }
 
     for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
         short dest_proc = neighbour % args->nr_processors;
         long nb_index = get_index(neighbour);
 
-        if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || batch[0]->distances[dest_proc][nb_index] != d - 1) {
+        if (batch[batch_nr]->adjacency_matrix[neighbour][vertex] <= 0 || batch[batch_nr]->distances[dest_proc][nb_index] != d - 1) {
             continue;
         }
 
@@ -153,8 +153,8 @@ void collect_deltas(long current_process_id, long counters[], long double **delt
             counters[dest_proc]++;
         }
 
-        long double enumerator = (long double) batch[0]->sigmas[dest_proc][nb_index];
-        long double denominator = (long double) batch[0]->sigmas[current_process_id][get_index(vertex)];
+        long double enumerator = (long double) batch[batch_nr]->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) batch[batch_nr]->sigmas[current_process_id][get_index(vertex)];
         long double frac = enumerator / denominator;
         deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
     }
@@ -288,15 +288,9 @@ void parallel_dependency() {
     long current_process_id = bsp_pid();
     long counters[args->nr_processors];
 
-    long double **deltas = allocate_and_register_matrix_double(0, true);
     long double **next_deltas = allocate_and_register_matrix_double(0, true);
     long **layer = allocate_and_register_matrix(-1, true);
     long **next_layer = allocate_and_register_matrix(-1, false);
-
-    bsp_sync();
-
-    // finding the first vertex with the largest distance
-    long max_distance = get_max_distance(0);
 
     long double* own_deltas = (long double *) calloc(args->vertices_per_proc, sizeof(long double));
     short* own_checked = (short *) calloc(args->vertices_per_proc, sizeof(short));
@@ -304,83 +298,96 @@ void parallel_dependency() {
     // The processor identifies its vertices with the longest distance.
     counters[current_process_id] = 0;
 
-    for (int i = 0; i < args->vertices_per_proc; ++i) {
-        if (batch[0]->distances[current_process_id][i] == max_distance) {
-            layer[current_process_id][counters[current_process_id]] = i * args->nr_processors + current_process_id;
-            counters[current_process_id]++;
-        }
-    }
+    for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
+        // finding the first vertex with the largest distance
+        long max_distance = get_max_distance(batch_nr);
 
-    // iterate over the levels, beginning at the back
-    for (long d = max_distance; d > 0; d--) {
-        memset(counters, 0, args->nr_processors * sizeof(long));
-
-        for (long proc = 0; proc < args->nr_processors; ++proc) {
-            for (long index = 0; index < args->vertices_per_proc; index++) {
-                long vertex = layer[proc][index];
-
-                // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
-                if (vertex < 0) {
-                    break;
-                }
-
-                // Sum the deltas received per vertex.
-                own_deltas[get_index(vertex)] += next_deltas[proc][index];
+        for (int i = 0; i < args->vertices_per_proc; ++i) {
+            if (batch[batch_nr]->distances[current_process_id][i] == max_distance) {
+                layer[current_process_id][counters[current_process_id]] = i * args->nr_processors + current_process_id;
+                counters[current_process_id]++;
             }
         }
 
-        for (long proc = 0; proc < args->nr_processors; ++proc) {
-            for (long index = 0; index < args->vertices_per_proc; index++) {
-                long vertex = layer[proc][index];
+        long double **deltas = allocate_and_register_matrix_double(0, true);
 
-                if (vertex < 0) {
-                    break;
+        bsp_sync();
+
+        // iterate over the levels, beginning at the back
+        for (long d = max_distance; d > 0; d--) {
+            memset(counters, 0, args->nr_processors * sizeof(long));
+
+            for (long proc = 0; proc < args->nr_processors; ++proc) {
+                for (long index = 0; index < args->vertices_per_proc; index++) {
+                    long vertex = layer[proc][index];
+
+                    // Go to the next processor vertices when we reach the end of the list, i.e. when vertex = -1.
+                    if (vertex < 0) {
+                        break;
+                    }
+
+                    // Sum the deltas received per vertex.
+                    own_deltas[get_index(vertex)] += next_deltas[proc][index];
                 }
-
-                // Don't fill the predecessors more than once.
-                if (own_checked[get_index(vertex)] == 1) {
-                    continue;
-                }
-
-                own_checked[get_index(vertex)] = 1;
-
-                collect_deltas(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex);
             }
+
+            for (long proc = 0; proc < args->nr_processors; ++proc) {
+                for (long index = 0; index < args->vertices_per_proc; index++) {
+                    long vertex = layer[proc][index];
+
+                    if (vertex < 0) {
+                        break;
+                    }
+
+                    // Don't fill the predecessors more than once.
+                    if (own_checked[get_index(vertex)] == 1) {
+                        continue;
+                    }
+
+                    own_checked[get_index(vertex)] = 1;
+
+                    collect_deltas(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex, batch_nr);
+                }
+            }
+
+            // Communication of the next layer.
+            for (int i = 0; i < args->nr_processors; ++i) {
+                // Aggregate the deltas.
+                for (int j = 0; j < counters[i]; ++j) {
+                    long neighbour = next_layer[i][j];
+                    next_deltas[i][j] = deltas[i][get_index(neighbour)];
+                }
+
+                // Append the vectors with -1 to denote the end if they are smaller than the maximum size.
+                if (counters[i] < args->vertices_per_proc) {
+                    next_layer[i][counters[i]] = -1;
+                    counters[i]++;
+                }
+
+                // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
+                bsp_put(i, next_layer[i], layer[current_process_id], 0, counters[i] * sizeof(long));
+                bsp_put(i, next_deltas[i], next_deltas[current_process_id], 0, counters[i] * sizeof(long double));
+            }
+
+            bsp_sync();
         }
 
-        // Communication of the next layer.
+        // Distribute the deltas of the current processor, that are complete.
         for (int i = 0; i < args->nr_processors; ++i) {
-            // Aggregate the deltas.
-            for (int j = 0; j < counters[i]; ++j) {
-                long neighbour = next_layer[i][j];
-                next_deltas[i][j] = deltas[i][get_index(neighbour)];
-            }
-
-            // Append the vectors with -1 to denote the end if they are smaller than the maximum size.
-            if (counters[i] < args->vertices_per_proc) {
-                next_layer[i][counters[i]] = -1;
-                counters[i]++;
-            }
-
-            // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
-            bsp_put(i, next_layer[i], layer[current_process_id], 0, counters[i] * sizeof(long));
-            bsp_put(i, next_deltas[i], next_deltas[current_process_id], 0, counters[i] * sizeof(long double));
+            bsp_put(i, own_deltas, deltas[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
         }
 
         bsp_sync();
+
+        deltas[batch[batch_nr]->source % args->nr_processors][get_index(batch[batch_nr]->source)] = 0.0;
+        batch[batch_nr]->deltas = deltas;
+
+        for (int i = 0; i < args->nr_processors; ++i) {
+            bsp_pop_reg(deltas[i]);
+        }
     }
 
-    // Distribute the deltas of the current processor, that are complete.
     for (int i = 0; i < args->nr_processors; ++i) {
-        bsp_put(i, own_deltas, deltas[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
-    }
-
-    bsp_sync();
-
-    deltas[batch[0]->source % args->nr_processors][get_index(batch[0]->source)] = 0.0;
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        bsp_pop_reg(deltas[i]);
         bsp_pop_reg(next_deltas[i]);
         bsp_pop_reg(layer[i]);
     }
@@ -391,8 +398,6 @@ void parallel_dependency() {
     free_matrix_double(&next_deltas, args->nr_processors);
     free(own_deltas);
     free(own_checked);
-
-    batch[0]->deltas = deltas;
 }
 
 
@@ -402,6 +407,7 @@ void parallel_betweenness() {
     parallel_sigmas();
     parallel_dependency();
 
+    // TODO: fix/remove/replace.
     long double *totals = calloc(args->nr_processors, sizeof(long double));
     bsp_push_reg(totals, args->nr_processors * sizeof(long double));
     bsp_sync();

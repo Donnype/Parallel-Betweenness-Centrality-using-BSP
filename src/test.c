@@ -113,10 +113,10 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             failed = check_double(batch[j]->deltas, expected_deltas);
 
             if (failed == 1) {
-                sprintf(out_text, "Betweenness test deltas failed for batch %i and P = %ld", i, args->nr_processors);
+                sprintf(out_text, "Betweenness test deltas failed for batch %i and P = %ld", j, args->nr_processors);
                 print_failure();
             } else {
-                sprintf(out_text, "Betweenness test deltas succeeded for batch %i and P = %ld", i, args->nr_processors);
+                sprintf(out_text, "Betweenness test deltas succeeded for batch %i and P = %ld", j, args->nr_processors);
                 print_success();
             }
         }
