@@ -13,6 +13,7 @@
 
 extern Args* args;
 extern Graph* graph;
+extern Graph** batch;
 long source = 0;
 
 
@@ -54,8 +55,8 @@ long ** allocate_and_register_matrix(long value, bool push_register) {
 
 
 void sparse_collect_neighbours(long **next_neighbourhoods, long counters[], long **distances, long vertex, long level) {
-    for (long i = 0; i < graph->degrees[vertex]; ++i) {
-        long neighbour = graph->adjacency_lists[vertex][i];
+    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
+        long neighbour = batch[0]->adjacency_lists[vertex][i];
 
         if (distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
             continue;
@@ -125,13 +126,13 @@ void parallel_bfs() {
                 own_distances[get_index(vertex)] = level - 1;
 
                 // Collect all neighbours of the vector and to which processor they should be sent.
-                if (graph->is_sparse) {
+                if (batch[0]->is_sparse) {
                     sparse_collect_neighbours(next_neighbourhoods, counters, distances, vertex, level);
                     continue;
                 }
 
                 for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-                    if (graph->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
+                    if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || distances[neighbour % args->nr_processors][get_index(neighbour)] >= 0) {
                         continue;
                     }
 
@@ -182,14 +183,15 @@ void parallel_bfs() {
     // Free the variables.
     free_matrix_long(&neighbourhood, args->nr_processors);
     free_matrix_long(&next_neighbourhoods, args->nr_processors);
+    free(own_distances);
 
     bsp_end();
 
-    graph->distances = distances;
+    batch[0]->distances = distances;
 
     // Depending on a CLI argument, print the distances found in processor 0.
     if (args->output && current_process_id == 0) {
-        print_graph_values(graph->distances);
+        print_graph_values(batch[0]->distances);
     }
 }
 

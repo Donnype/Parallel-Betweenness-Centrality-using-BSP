@@ -11,6 +11,7 @@
 
 extern Args* args;
 Graph* graph;
+Graph** batch;
 
 
 short **generate_symmetric_mat() {
@@ -70,55 +71,69 @@ void free_matrix(short ***M, long nr_rows) {
 }
 
 
-void clean_graph_data() {
-    if (graph->distances != NULL) {
-        free_matrix_long(&(graph->distances), args->nr_processors);
-        graph->distances = NULL;
+void clean_graph_data(Graph* g) {
+    if (g->distances != NULL) {
+        free_matrix_long(&(g->distances), args->nr_processors);
+        g->distances = NULL;
     }
 
-    if (graph->sigmas != NULL) {
-        free_matrix_long(&(graph->sigmas), args->nr_processors);
-        graph->sigmas = NULL;
+    if (g->sigmas != NULL) {
+        free_matrix_long(&(g->sigmas), args->nr_processors);
+        g->sigmas = NULL;
     }
 
-    if (graph->deltas != NULL) {
-        free_matrix_double(&(graph->deltas), args->nr_processors);
-        graph->deltas = NULL;
+    if (g->deltas != NULL) {
+        free_matrix_double(&(g->deltas), args->nr_processors);
+        g->deltas = NULL;
     }
 }
 
 
-void initialize_properties() {
-    graph->distances = NULL;
-    graph->sigmas = NULL;
-    graph->deltas = NULL;
-    graph->is_sparse = NULL;
-    graph->adjacency_lists = NULL;
-    graph->degrees = NULL;
+void initialize_properties(Graph* g) {
+    g->distances = NULL;
+    g->sigmas = NULL;
+    g->deltas = NULL;
+    g->is_sparse = NULL;
+    g->adjacency_lists = NULL;
+    g->degrees = NULL;
 }
 
 
 void generate_graph() {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = generate_symmetric_mat();
-    initialize_properties();
+    initialize_properties(graph);
 }
 
 
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = fill_buf(matrix);
-    initialize_properties();
+    initialize_properties(graph);
 }
 
 
-long get_max_distance() {
+void create_batch() {
+    batch = malloc(args->batch_size * sizeof(Graph*));
+
+    for (int i = 0; i < args->batch_size; ++i) {
+        batch[i] = (Graph*) malloc(sizeof(Graph));
+        initialize_properties(batch[i]);
+        batch[i]->adjacency_matrix = graph->adjacency_matrix;
+        batch[i]->adjacency_lists = graph->adjacency_lists;
+        batch[i]->degrees = graph->degrees;
+        batch[i]->is_sparse = graph->is_sparse;
+    }
+}
+
+
+long get_max_distance(long index) {
     long max_distance = 0;
 
     for (int i = 0; i < args->nr_processors; ++i) {
         for (long j = 0; j < args->vertices_per_proc; j++) {
-            if (graph->distances[i][j] > max_distance) {
-                max_distance = graph->distances[i][j];
+            if (batch[index]->distances[i][j] > max_distance) {
+                max_distance = batch[index]->distances[i][j];
             }
         }
     }
@@ -153,24 +168,40 @@ void to_sparse() {
 }
 
 
-void free_graph() {
-    if (graph == NULL) {
+void free_graph(Graph *g) {
+    if (g == NULL) {
         return;
     }
 
-    if (graph->adjacency_matrix != NULL) {
-        free_matrix(&(graph->adjacency_matrix), args->nr_vertices);
+    if (g->adjacency_matrix != NULL) {
+        free_matrix(&(g->adjacency_matrix), args->nr_vertices);
     }
 
-    if (graph->adjacency_lists != NULL) {
-        free_matrix_long(&(graph->adjacency_lists), args->nr_vertices);
+    if (g->adjacency_lists != NULL) {
+        free_matrix_long(&(g->adjacency_lists), args->nr_vertices);
     }
 
-    if (graph->degrees != NULL) {
-        free(graph->degrees);
+    if (g->degrees != NULL) {
+        free(g->degrees);
     }
 
-    free(graph);
+    free(g);
+}
+
+
+void free_batch() {
+    free_graph(graph);
+
+    for (int i = 0; i < args->batch_size; ++i) {
+        clean_graph_data(batch[i]);
+    }
+}
+
+
+void clean_batch_data() {
+    for (int i = 0; i < args->batch_size; ++i) {
+        clean_graph_data(batch[i]);
+    }
 }
 
 

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include "../include/bfs.h"
 #include "../include/parallel_bfs.h"
@@ -14,6 +15,7 @@
 
 extern Args* args;
 extern Graph* graph;
+extern Graph** batch;
 
 long p_count;
 long double epsilon = 0.00001;
@@ -74,8 +76,8 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
 
         parallel_wrap(argc, argv);
 
-        int failed = check_long(graph->distances, expected);
-        clean_graph_data();
+        int failed = check_long(batch[0]->distances, expected);
+        clean_batch_data();
 
         if (failed == 1) {
             sprintf(out_text, "BFS test failed for P = %ld", args->nr_processors);
@@ -94,7 +96,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
         parallel_betweenness_wrap(argc, argv);
 
-        int failed = check_long(graph->sigmas, expected_sigmas);
+        int failed = check_long(batch[0]->sigmas, expected_sigmas);
 
         if (failed == 1) {
             sprintf(out_text, "Betweenness test sigmas failed for P = %ld", args->nr_processors);
@@ -104,7 +106,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             print_success();
         }
 
-        failed = check_double(graph->deltas, expected_deltas);
+        failed = check_double(batch[0]->deltas, expected_deltas);
 
         if (failed == 1) {
             sprintf(out_text, "Betweenness test deltas failed for P = %ld", args->nr_processors);
@@ -114,7 +116,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[], l
             print_success();
         }
 
-        clean_graph_data();
+        clean_batch_data();
         printf("\n");
     }
 }
@@ -173,7 +175,7 @@ void test_to_sparse() {
         }
     }
 
-    free_graph();
+    free_graph(graph);
 }
 
 
@@ -193,6 +195,10 @@ void first_test(int argc, char**argv) {
     };
 
     construct_graph(adjacency);
+    to_sparse();
+    create_batch();
+
+    batch[0]->is_sparse = false;
 
     long expected[] = {0, 1, 1, 1, 2, 2, 3};
     long ps[] = {1, 7};
@@ -202,20 +208,20 @@ void first_test(int argc, char**argv) {
 
     printf("\nPerforming the test sparse.\n");
 
-    to_sparse();
+    batch[0]->is_sparse = true;
     test_bfs(argc, argv, ps, expected);
 
     long expected_sigmas[] = {1, 1, 1, 1, 1, 2, 3};
     long double expected_deltas[] = {0.0, 4.0/3.0, 5.0/6.0, 5.0/6.0, 1.0/3.0, 2.0/3.0, 0.0};
 
-    graph->is_sparse = false;
+    batch[0]->is_sparse = false;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
-    graph->is_sparse = true;
+    batch[0]->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_graph();
+    free_batch();
 }
 
 
@@ -238,29 +244,33 @@ void second_test(int argc, char**argv) {
     };
 
     construct_graph(adjacency);
+    to_sparse();
+    create_batch();
+
     long expected[] = {0, 2, 1, 1, 1, 2, 1, 2, 1, 2};
     long ps[] = {1, 2, 5};
     p_count = 3;
 
+    batch[0]->is_sparse = false;
     test_bfs(argc, argv, ps, expected);
 
     printf("\nPerforming the test sparse.\n");
 
-    to_sparse();
+    batch[0]->is_sparse = true;
     test_bfs(argc, argv, ps, expected);
     printf("\n");
 
     long expected_sigmas[] = {1, 2, 1, 1, 1, 2, 1, 2, 1, 3};
     long double expected_deltas[] = {0.0, 0.0, 1.0, 1.0/2.0, 4.0/3.0, 0.0, 5.0/6.0, 0.0, 1.0/3.0, 0.0};
 
-    graph->is_sparse = false;
+    batch[0]->is_sparse = false;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
-    graph->is_sparse = true;
+    batch[0]->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_graph();
+    free_batch();
 }
 
 
@@ -282,32 +292,39 @@ void third_test(int argc, char**argv) {
     };
 
     construct_graph(adjacency);
+    to_sparse();
+    create_batch();
+
     long expected[] = {0, 1, 2, 3, 1, 3, 2, 3, 3};
     long ps[] = {1, 3};
     p_count = 2;
 
+    batch[0]->is_sparse = false;
     test_bfs(argc, argv, ps, expected);
     printf("\nPerforming the test sparse.\n");
 
-    to_sparse();
+    batch[0]->is_sparse = true;
     test_bfs(argc, argv, ps, expected);
     printf("\n");
 
     long expected_sigmas[] = {1, 1, 2, 2, 1, 1, 1, 1, 3};
     long double expected_deltas[] = {0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0};
 
-    graph->is_sparse = false;
+    batch[0]->is_sparse = false;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
-    graph->is_sparse = true;
+    batch[0]->is_sparse = true;
     test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    free_graph();
+    free_batch();
 }
 
 int main(int argc, char **argv) {
     read_args(argc, argv);
+    args->batch_size = 1;
+    args->set_sparse = false;
+
     test_to_sparse();
     printf("\n");
     first_test(argc, argv);

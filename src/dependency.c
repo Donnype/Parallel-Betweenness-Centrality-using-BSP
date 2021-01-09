@@ -11,6 +11,7 @@
 
 extern Args* args;
 extern Graph* graph;
+extern Graph** batch;
 extern long source;
 
 
@@ -57,8 +58,8 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
 
 void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
     // Collect all neighbours of the vector and to which processor they should be sent.
-    for (long i = 0; i < graph->degrees[vertex]; ++i) {
-        long neighbour = graph->adjacency_lists[vertex][i];
+    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
+        long neighbour = batch[0]->adjacency_lists[vertex][i];
         short dest_proc = neighbour % args->nr_processors;
 
         // We count how many times we send a vertex the first time for the sigmas.
@@ -81,13 +82,13 @@ void collect_neighbours_sparse(long **distances, long **sigmas, long *own_sigmas
 
 
 void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long **next_neighbourhoods, long counters[], long vertex, long level) {
-    if (graph->is_sparse) {
+    if (batch[0]->is_sparse) {
         return collect_neighbours_sparse(distances, sigmas, own_sigmas, next_neighbourhoods, counters, vertex, level);
     }
 
     // Collect all neighbours of the vector and to which processor they should be sent.
     for (long neighbour = 0; neighbour < args->nr_vertices; ++neighbour) {
-        if (graph->adjacency_matrix[neighbour][vertex] <= 0) {
+        if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0) {
             continue;
         }
 
@@ -113,12 +114,12 @@ void collect_neighbours(long **distances, long **sigmas, long *own_sigmas, long 
 
 
 void collect_deltas_sparse(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
-    for (long i = 0; i < graph->degrees[vertex]; ++i) {
-        long neighbour = graph->adjacency_lists[vertex][i];
+    for (long i = 0; i < batch[0]->degrees[vertex]; ++i) {
+        long neighbour = batch[0]->adjacency_lists[vertex][i];
         short dest_proc = neighbour % args->nr_processors;
         long nb_index = get_index(neighbour);
 
-        if (graph->adjacency_matrix[neighbour][vertex] <= 0 || graph->distances[dest_proc][nb_index] != d - 1) {
+        if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || batch[0]->distances[dest_proc][nb_index] != d - 1) {
             continue;
         }
 
@@ -127,8 +128,8 @@ void collect_deltas_sparse(long current_process_id, long counters[], long double
             counters[dest_proc]++;
         }
 
-        long double enumerator = (long double) graph->sigmas[dest_proc][nb_index];
-        long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
+        long double enumerator = (long double) batch[0]->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) batch[0]->sigmas[current_process_id][get_index(vertex)];
         long double frac = enumerator / denominator;
         deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
     }
@@ -136,7 +137,7 @@ void collect_deltas_sparse(long current_process_id, long counters[], long double
 
 
 void collect_deltas(long current_process_id, long counters[], long double **deltas, long **next_layer, long double *own_deltas, long d, long vertex) {
-    if (graph->is_sparse) {
+    if (batch[0]->is_sparse) {
         return collect_deltas_sparse(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex);
     }
 
@@ -144,7 +145,7 @@ void collect_deltas(long current_process_id, long counters[], long double **delt
         short dest_proc = neighbour % args->nr_processors;
         long nb_index = get_index(neighbour);
 
-        if (graph->adjacency_matrix[neighbour][vertex] <= 0 || graph->distances[dest_proc][nb_index] != d - 1) {
+        if (batch[0]->adjacency_matrix[neighbour][vertex] <= 0 || batch[0]->distances[dest_proc][nb_index] != d - 1) {
             continue;
         }
 
@@ -153,8 +154,8 @@ void collect_deltas(long current_process_id, long counters[], long double **delt
             counters[dest_proc]++;
         }
 
-        long double enumerator = (long double) graph->sigmas[dest_proc][nb_index];
-        long double denominator = (long double) graph->sigmas[current_process_id][get_index(vertex)];
+        long double enumerator = (long double) batch[0]->sigmas[dest_proc][nb_index];
+        long double denominator = (long double) batch[0]->sigmas[current_process_id][get_index(vertex)];
         long double frac = enumerator / denominator;
         deltas[dest_proc][nb_index] += frac * (own_deltas[get_index(vertex)] + 1);
     }
@@ -275,8 +276,8 @@ void parallel_sigmas() {
     free(own_distances);
     free(own_sigmas);
 
-    graph->distances = distances;
-    graph->sigmas = sigmas;
+    batch[0]->distances = distances;
+    batch[0]->sigmas = sigmas;
 }
 
 
@@ -292,7 +293,7 @@ void parallel_dependency() {
     bsp_sync();
 
     // finding the first vertex with the largest distance
-    long max_distance = get_max_distance();
+    long max_distance = get_max_distance(0);
 
     long double* own_deltas = (long double *) calloc(args->vertices_per_proc, sizeof(long double));
     short* own_checked = (short *) calloc(args->vertices_per_proc, sizeof(short));
@@ -301,7 +302,7 @@ void parallel_dependency() {
     counters[current_process_id] = 0;
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
-        if (graph->distances[current_process_id][i] == max_distance) {
+        if (batch[0]->distances[current_process_id][i] == max_distance) {
             layer[current_process_id][counters[current_process_id]] = i * args->nr_processors + current_process_id;
             counters[current_process_id]++;
         }
@@ -388,7 +389,7 @@ void parallel_dependency() {
     free(own_deltas);
     free(own_checked);
 
-    graph->deltas = deltas;
+    batch[0]->deltas = deltas;
 }
 
 
@@ -405,7 +406,7 @@ void parallel_betweenness() {
     long current_processor_id = bsp_pid();
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
-        totals[current_processor_id] += graph->deltas[current_processor_id][i];
+        totals[current_processor_id] += batch[0]->deltas[current_processor_id][i];
     }
 
     for (int i = 0; i < args->nr_processors; ++i) {

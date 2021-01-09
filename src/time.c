@@ -12,6 +12,7 @@
 
 extern Args* args;
 extern Graph* graph;
+extern Graph** batch;
 
 
 double diff(struct timespec start, struct timespec end) {
@@ -85,7 +86,7 @@ int seq_bfs() {
 
     for (int i = 0; i < args->runs; ++i) {
         ms += time_bfs_vec();
-        clean_graph_data();
+        clean_batch_data();
     }
 
     ms = ms / args->runs;
@@ -162,6 +163,8 @@ int main(int argc, char **argv) {
         generate_graph();
     }
 
+    create_batch();
+
     if (args->print_matrix == 1) {
         print_matrix(graph->adjacency_matrix);
     }
@@ -174,7 +177,7 @@ int main(int argc, char **argv) {
 //    int val = seq_bfs();
     int val = betweenness(argc, argv);
 
-    free_graph();
+    free_batch();
     free(args);
 
     return val;

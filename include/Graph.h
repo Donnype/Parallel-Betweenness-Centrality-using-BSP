@@ -19,10 +19,12 @@ typedef struct Graph {
 
 void generate_graph();
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
-long get_max_distance();
+long get_max_distance(long index);
 void to_sparse();
-void clean_graph_data();
-void free_graph();
+void create_batch();
+void clean_batch_data();
+void free_batch();
+void free_graph(Graph* g);
 void print_graph_values(long **matrix);
 void print_graph_values_LF(long double **matrix);
 void print_graph();
