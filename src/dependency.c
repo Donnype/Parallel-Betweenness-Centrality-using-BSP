@@ -148,7 +148,7 @@ void collect_deltas(long current_process_id, long counters[], long double **delt
             continue;
         }
 
-        if (deltas[dest_proc][nb_index] == 0) {
+        if (deltas[dest_proc][nb_index] == 0.0) {
             next_layer[dest_proc][counters[dest_proc]] = neighbour;
             counters[dest_proc]++;
         }
@@ -300,13 +300,19 @@ void parallel_dependency() {
     long double* own_deltas = (long double *) calloc(args->vertices_per_proc, sizeof(long double));
     short* own_checked = (short *) calloc(args->vertices_per_proc, sizeof(short));
 
-    // The processor identifies its vertices with the longest distance.
-    counters[current_process_id] = 0;
-
     for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
         // finding the first vertex with the largest distance
         long max_distance = get_max_distance(batch_nr);
 
+        memset(counters, 0, args->nr_processors * sizeof(long));
+
+        for (int i = 0; i < args->nr_processors; ++i) {
+            layer[i][0] = -1;
+            next_layer[i][0] = -1;
+            memset(next_deltas[i], 0, args->vertices_per_proc * sizeof(long double));
+        }
+
+        // The processor identifies its vertices with the longest distance.
         for (int i = 0; i < args->vertices_per_proc; ++i) {
             if (batch[batch_nr]->distances[current_process_id][i] == max_distance) {
                 layer[current_process_id][counters[current_process_id]] = i * args->nr_processors + current_process_id;
@@ -314,7 +320,12 @@ void parallel_dependency() {
             }
         }
 
+        layer[current_process_id][counters[current_process_id]] = -1;
+        counters[current_process_id]++;
+
         long double **deltas = allocate_and_register_matrix_double(0, true);
+        memset(own_deltas, 0, args->vertices_per_proc * sizeof(long double));
+        memset(own_checked, 0, args->vertices_per_proc * sizeof(short));
 
         bsp_sync();
 
@@ -353,6 +364,21 @@ void parallel_dependency() {
 
                     collect_deltas(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex, batch_nr);
                 }
+            }
+
+            // Sometimes vertices of lower d have no successors, but we do have to push delta parts to predecessors.
+            for (long index = 0; index < args->vertices_per_proc; index++) {
+                long distance = batch[batch_nr]->distances[current_process_id][index];
+                long vertex = index * args->nr_processors + current_process_id;
+
+                // Don't fill the predecessors more than once.
+                if (own_checked[index] == 1 || distance != d) {
+                    continue;
+                }
+
+                own_checked[index] = 1;
+
+                collect_deltas(current_process_id, counters, deltas, next_layer, own_deltas, d, vertex, batch_nr);
             }
 
             // Communication of the next layer.

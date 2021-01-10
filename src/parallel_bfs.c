@@ -109,14 +109,9 @@ void parallel_bfs() {
             neighbourhood[current_process_id][1] = -1;
         }
 
+        bsp_sync();
+
         for (long level = 1; level < args->nr_vertices; ++level) {
-            bsp_sync();
-
-            // Check if all the processors are done and if so, move on.
-            if (all(done, 1)) {
-                break;
-            }
-
             memset(counters, 0, args->nr_processors * sizeof(long));
 
             // We loop over the nodes received from each processor.
@@ -176,6 +171,13 @@ void parallel_bfs() {
                 // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
                 bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
                 bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(long));
+            }
+
+            bsp_sync();
+
+            // Check if all the processors are done and if so, move on.
+            if (all(done, 1)) {
+                break;
             }
         }
 

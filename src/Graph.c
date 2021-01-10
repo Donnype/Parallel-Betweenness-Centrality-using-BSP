@@ -128,13 +128,13 @@ void create_batch() {
 }
 
 
-long get_max_distance(long index) {
+long get_max_distance(long batch_nr) {
     long max_distance = 0;
 
     for (int i = 0; i < args->nr_processors; ++i) {
         for (long j = 0; j < args->vertices_per_proc; j++) {
-            if (batch[index]->distances[i][j] > max_distance) {
-                max_distance = batch[index]->distances[i][j];
+            if (batch[batch_nr]->distances[i][j] > max_distance) {
+                max_distance = batch[batch_nr]->distances[i][j];
             }
         }
     }
