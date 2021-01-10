@@ -431,46 +431,20 @@ void parallel_dependency() {
 }
 
 
-void parallel_betweenness() {
+void parallel_dependency_wrap() {
     bsp_begin(args->nr_processors);
 
     parallel_sigmas();
     parallel_dependency();
 
-    // TODO: fix/remove/replace.
-    long double *totals = calloc(args->nr_processors, sizeof(long double));
-    bsp_push_reg(totals, args->nr_processors * sizeof(long double));
-    bsp_sync();
-
-    long current_processor_id = bsp_pid();
-
-    for (int i = 0; i < args->vertices_per_proc; ++i) {
-        totals[current_processor_id] += batch[0]->deltas[current_processor_id][i];
-    }
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        bsp_put(i, &totals[current_processor_id], totals, current_processor_id * sizeof(long double), sizeof(long double));
-    }
-
     bsp_end();
 
-    long double total = 0.0;
-
-    for (int i = 0; i < args->nr_processors; ++i) {
-        total += totals[i];
-    }
-
-    if (args->output) {
-        print_graph();
-        printf("total is %Lf. \n", total);
-    }
-
-    free(totals);
+    return;
 }
 
 
 void parallel_betweenness_wrap(int argc, char **argv) {
-    bsp_init(parallel_betweenness, argc, argv);
+    bsp_init(parallel_dependency_wrap, argc, argv);
 
-    parallel_betweenness();
+    parallel_dependency_wrap();
 }
