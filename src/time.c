@@ -69,7 +69,7 @@ double time_betweenness_parallel(int argc, char **argv) {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
-    parallel_betweenness_wrap(argc, argv);
+    parallel_dependency_wrap(argc, argv);
     clock_gettime(CLOCK_REALTIME, &end);
 
     return diff(start, end);

@@ -98,7 +98,7 @@ void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[args
         args->nr_processors = ps[i];
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
-        parallel_betweenness_wrap(argc, argv);
+        parallel_dependency_wrap(argc, argv);
 
         for (int j = 0; j < args->batch_size; ++j) {
             int failed = check_long(batch[j]->sigmas, expected_sigmas[j]);

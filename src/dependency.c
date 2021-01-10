@@ -431,7 +431,7 @@ void parallel_dependency() {
 }
 
 
-void parallel_dependency_wrap() {
+void parallel_sigma_and_dependency() {
     bsp_begin(args->nr_processors);
 
     parallel_sigmas();
@@ -443,8 +443,8 @@ void parallel_dependency_wrap() {
 }
 
 
-void parallel_betweenness_wrap(int argc, char **argv) {
-    bsp_init(parallel_dependency_wrap, argc, argv);
+void parallel_dependency_wrap(int argc, char **argv) {
+    bsp_init(parallel_sigma_and_dependency, argc, argv);
 
-    parallel_dependency_wrap();
+    parallel_sigma_and_dependency();
 }

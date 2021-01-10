@@ -56,8 +56,8 @@ def figures():
 
 
 def main():
-    tables()
-    # figures()
+    # tables()
+    figures()
 
 
 if __name__ == '__main__':
