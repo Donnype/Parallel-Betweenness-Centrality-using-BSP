@@ -25,9 +25,9 @@ def get_data():
 
     files = ['data/f_10_s_3_n_8400_sparse.txt', 'data/s_30_n_8400_sparse.txt']
     labels = ['s = 3, f = 10', 's = 30, f = 1']
-    for label, file in zip(labels, files):
-    # for s in [2, 5, 10, 100]:
-        # file = f'data/8400_{s}_sparse.bfs'
+    # for label, file in zip(labels, files):
+    for s in [2, 5, 10, 100]:
+        file = f'data/8400_{s}_sparse.txt'
         print(file)
         data = []
 
@@ -36,8 +36,8 @@ def get_data():
                 data.append(line.strip().split("\t"))
 
         data = np.array(data).astype(float)
-        # datas[s] = data
-        datas[label] = data
+        datas[f's = {s}'] = data
+        # datas[label] = data
 
     return datas
 
@@ -50,7 +50,7 @@ def figures():
     plt.ylabel('Time (ms)')
     plt.grid()
     plt.legend(loc='upper right')
-    name = f'figures/long-or-not.png'
+    name = f'figures/dependency.png'
     plt.savefig(name, dpi=500)
     plt.close()
 

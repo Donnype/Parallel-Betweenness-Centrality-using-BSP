@@ -65,7 +65,7 @@ double time_bfs_parallel(int argc, char **argv) {
 }
 
 
-double time_betweenness_parallel(int argc, char **argv) {
+double time_dependency_parallel(int argc, char **argv) {
     struct timespec start, end;
 
     clock_gettime(CLOCK_REALTIME, &start);
@@ -119,7 +119,7 @@ int bfs(int argc, char **argv) {
 }
 
 
-int betweenness(int argc, char **argv) {
+int dependency(int argc, char **argv) {
     double ms = 0.0;
     printf("Betweenness parallel: \n\n");
     printf("p\tms\n");
@@ -128,7 +128,7 @@ int betweenness(int argc, char **argv) {
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
 
         for (int i = 0; i < args->runs; ++i) {
-            ms += time_betweenness_parallel(argc, argv);
+            ms += time_dependency_parallel(argc, argv);
             clean_batch_data();
         }
 
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 
 //    int val = bfs(argc, argv);
 //    int val = seq_bfs();
-    int val = betweenness(argc, argv);
+    int val = dependency(argc, argv);
 
     free_batch();
     free(args);

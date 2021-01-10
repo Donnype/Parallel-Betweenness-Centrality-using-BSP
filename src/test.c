@@ -93,7 +93,7 @@ void test_bfs(int argc, char**argv, long ps[], long expected[args->batch_size][a
 }
 
 
-void test_betweenness(int argc, char**argv, long ps[], long expected_sigmas[args->batch_size][args->nr_vertices], long double expected_deltas[args->batch_size][args->nr_vertices]) {
+void test_dependency(int argc, char**argv, long ps[], long expected_sigmas[args->batch_size][args->nr_vertices], long double expected_deltas[args->batch_size][args->nr_vertices]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
@@ -221,11 +221,11 @@ void first_test(int argc, char**argv) {
     long double expected_deltas[1][7] = {{0.0, 4.0/3.0, 5.0/6.0, 5.0/6.0, 1.0/3.0, 2.0/3.0, 0.0}};
 
     batch[0]->is_sparse = false;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
     batch[0]->is_sparse = true;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_batch();
 }
@@ -270,11 +270,11 @@ void second_test(int argc, char**argv) {
     long double expected_deltas[1][10] = {{0.0, 0.0, 1.0, 1.0/2.0, 4.0/3.0, 0.0, 5.0/6.0, 0.0, 1.0/3.0, 0.0}};
 
     batch[0]->is_sparse = false;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
     batch[0]->is_sparse = true;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_batch();
 }
@@ -317,11 +317,11 @@ void third_test(int argc, char**argv) {
     long double expected_deltas[1][9] = {{0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0}};
 
     batch[0]->is_sparse = false;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
     batch[0]->is_sparse = true;
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_batch();
 }
@@ -331,7 +331,7 @@ void test_batched(int argc, char**argv) {
     printf("Performing batched test with 9x9 graph. \n\n");
 
     args->nr_vertices = 9;
-    args->batch_size = 4;
+    args->batch_size = 9;
 
     short adjacency[9][9] = {
         {0, 1, 0, 0, 1, 0, 0, 0, 0},
@@ -349,11 +349,16 @@ void test_batched(int argc, char**argv) {
     to_sparse();
     create_batch();
 
-    long expected[4][9] = {
+    long expected[9][9] = {
             {0, 1, 2, 3, 1, 3, 2, 3, 3},
             {1, 0, 1, 2, 2, 4, 3, 4, 2},
             {2, 1, 0, 1, 1, 3, 2, 3, 1},
             {3, 2, 1, 0, 2, 3, 2, 3, 1},
+            {1, 2, 1, 2, 0, 2, 1, 2, 2},
+            {3, 4, 3, 3, 2, 0, 1, 2, 2},
+            {2, 3, 2, 2, 1, 1, 0, 1, 1},
+            {3, 4, 3, 3, 2, 2, 1, 0, 2},
+            {3, 2, 1, 1, 2, 2, 1, 2, 0},
     };
 
     long ps[] = {1, 3};
@@ -373,30 +378,40 @@ void test_batched(int argc, char**argv) {
     test_bfs(argc, argv, ps, expected);
     printf("\n");
 
-    long expected_sigmas[4][9] = {
+    long expected_sigmas[9][9] = {
         {1, 1, 2, 2, 1, 1, 1, 1, 3},
         {1, 1, 1, 1, 2, 3, 3, 3, 1},
         {2, 1, 1, 1, 1, 2, 2, 2, 1},
         {2, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 2, 1, 1, 1, 1, 1, 1, 2},
+        {1, 3, 2, 1, 1, 1, 1, 1, 1},
+        {1, 3, 2, 1, 1, 1, 1, 1, 1},
+        {1, 3, 2, 1, 1, 1, 1, 1, 1},
+        {3, 1, 1, 1, 2, 1, 1, 1, 1},
     };
-    long double expected_deltas[4][9] = {
+    long double expected_deltas[9][9] = {
             {0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0},
             {3.0/2.0, 0.0, 9.0/2.0, 0.0, 2.0, 0.0, 2.0, 0.0, 1.0},
             {0.0, 1.0/2.0, 0.0, 0.0, 2.0, 0.0, 2.0, 0.0, 3.0/2.0},
             {0.0, 1.0/2.0, 3.0, 0.0, 1.0/2.0, 0.0, 2.0, 0.0, 3.0},
+            {1.0/2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 5.0/2.0, 0.0, 0.0},
+            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 7.0, 0.0, 11.0/6.0},
+            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 0.0, 0.0, 11.0/6.0},
+            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 7.0, 0.0, 11.0/6.0},
+            {0.0, 1.0/3.0, 13.0/6.0, 0.0, 2.0/3.0, 0.0, 17.0/6.0, 0.0, 0.0},
     };
 
     for (int j = 0; j < args->batch_size; ++j) {
         batch[j]->is_sparse = false;
     }
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     printf("\nPerforming the test sparse.\n");
 
     for (int j = 0; j < args->batch_size; ++j) {
         batch[j]->is_sparse = true;
     }
-    test_betweenness(argc, argv, ps, expected_sigmas, expected_deltas);
+    test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
     free_batch();
 }

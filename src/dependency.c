@@ -448,3 +448,41 @@ void parallel_dependency_wrap(int argc, char **argv) {
 
     parallel_sigma_and_dependency();
 }
+
+
+void parallel_betweenness() {
+    bsp_begin(args->nr_processors);
+
+    if (args->nr_vertices % args->batch_size != 0) {
+        printf("Number of vertices is not divisible by batch size!");
+        return;
+    }
+
+    long double *totals = calloc(args->nr_vertices, sizeof(long double));
+
+    for (int i = 0; i < args->nr_vertices / args->batch_size; ++i) {
+        parallel_sigmas();
+        parallel_dependency();
+
+        for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
+            for (int proc = 0; proc < args->nr_processors; ++proc) {
+                for (int j = 0; j < args->vertices_per_proc; ++j) {
+                    long index = j * args->nr_processors + proc;
+
+                    totals[index] += batch[batch_nr]->deltas[proc][j];
+                }
+            }
+        }
+    }
+
+    bsp_end();
+
+    return;
+}
+
+
+void parallel_betweenness_wrap(int argc, char **argv) {
+    bsp_init(parallel_betweenness, argc, argv);
+
+    parallel_betweenness();
+}
