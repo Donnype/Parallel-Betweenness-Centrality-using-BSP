@@ -42,7 +42,6 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
                 break;
             }
 
-
             // Skip the vertex if we have seen it before.
             if (own_distances[get_index(vertex)] >= 0) {
                 continue;

@@ -1,69 +1,59 @@
-def read(file):
-    data = {
-        'p1': [],
-        'p2': [],
-        'p3': [],
-        'p4': [],
-        'p5': [],
-        'p6': [],
-        'p7': [],
-        'p8': [],
-    }
-
-    ns = []
-    ps = []
-    mss = []
-
-    with open(file, 'r') as f:
-            f.readline()
-
-            for line in f:
-                n, p, ms = line.split("\t")
-                ns.append(n)
-                ps.append(p)
-                mss.append(ms)
-
-    for i, m in enumerate(mss):
-        key = 'p' + ps[i]
-        data[key].append(float(m.strip()))
-
-    print_table(data)
+import matplotlib.pyplot as plt
+import numpy as np
 
 
-def print_table(data):
+def tables():
+    datas = get_data()
+
     lines = ""
-    i = 3
 
-    for n in [f"$10^{i}$" for i in range(3, 10)]:
-        line = f"                {n} "
-
-        for t in data.values():
-            line += f"& ${t[i - 3]}$ "
+    for i in range(8):
+        line = ""
+        for s, data in datas.items():
+            data = data[:, 1]
+            line += f'& ${round(data[i], 2)}$ '
 
         line += """ \\\\
 """
-
         lines += line
-        i += 1
 
-    table = """
-        \\begin{tabular}{ |c|c c c c c c c c| }
-            \hline
-            & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 \\\\
-            \hline
-"""
-    table += lines
-    table += """            \hline
-        \end{tabular}
-"""
+    print(lines)
 
-    print(table)
+
+def get_data():
+    datas = {}
+
+    for s in [2, 5, 10, 100]:
+        file = f'data/8400_{s}_sparse.bfs'
+        print(file)
+        data = []
+
+        with open(file, 'r') as f:
+            for line in f:
+                data.append(line.strip().split("\t"))
+
+        data = np.array(data).astype(float)
+        datas[s] = data
+
+    return datas
+
+
+def figures():
+    for s, data in get_data().items():
+        plt.plot(data[:, 0], data[:, 1], label=f's = {s}')
+
+    plt.xlabel('Number of processors')
+    plt.ylabel('Time (ms)')
+    plt.grid()
+    plt.legend(loc='upper right')
+    name = f'figures/non-sparse.png'
+    plt.savefig(name, dpi=500)
+    plt.close()
 
 
 def main():
-    for file in ['parallel_benchmark.txt', 'log_parallel_benchmark.txt', 'fast_parallel_benchmark.txt']:
-        print(file)
-        read(file)
+    tables()
+    # figures()
 
 
 if __name__ == '__main__':
