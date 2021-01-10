@@ -175,28 +175,40 @@ void parallel_sigmas() {
     long **next_sigmas = allocate_and_register_matrix(0, true);
 
     for (int i = 0; i < args->nr_processors; ++i) {
-        done[i] = 0;
         bsp_push_reg(&done[i], sizeof(long));
     }
 
     // It is convenient to keep track of the distances received by each processor separately.
     long *own_distances = (long *) malloc(args->vertices_per_proc * sizeof(long));
-    memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
     long *own_sigmas = (long *) calloc(args->vertices_per_proc, sizeof(long));
 
     for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
         long **distances = allocate_and_register_matrix(-1, true);
         long **sigmas = allocate_and_register_matrix(0, true);
+        memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
+        memset(own_sigmas, 0, args->vertices_per_proc * sizeof(long));
 
-        bsp_sync();
+        for (int i = 0; i < args->nr_processors; ++i) {
+            neighbourhood[i][0] = -1;
+            next_neighbourhoods[i][0] = -1;
+            done[i] = 0;
+        }
 
         if (current_process_id == batch[batch_nr]->source % args->nr_processors) {
             // We assume that the source vertex was received from the processor containing it.
             neighbourhood[current_process_id][0] = batch[batch_nr]->source;
+            neighbourhood[current_process_id][1] = -1;
             next_sigmas[current_process_id][0] = 1;
         }
 
         for (long level = 1; level < args->nr_vertices; ++level) {
+            bsp_sync();
+
+            // Check if all the processors are done and if so, move on.
+            if (all(done, 1)) {
+                break;
+            }
+
             memset(counters, 0, args->nr_processors * sizeof(long));
             update_sigmas(own_sigmas, own_distances, neighbourhood, next_sigmas);
 
@@ -242,13 +254,6 @@ void parallel_sigmas() {
                 bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
                 bsp_put(i, next_sigmas[i], next_sigmas[current_process_id], 0, counters[i] * sizeof(long));
                 bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(short));
-            }
-
-            bsp_sync();
-
-            // Check if all the processors are done and if so, move on.
-            if (all(done, 1)) {
-                break;
             }
         }
 
