@@ -69,7 +69,7 @@ int check_double(long double** result, long double expected[args->nr_vertices]) 
     return failed;
 }
 
-void test_bfs(int argc, char**argv, long ps[], long expected[]) {
+void test_bfs(int argc, char**argv, long ps[], long expected[args->batch_size][args->nr_vertices]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
@@ -77,7 +77,7 @@ void test_bfs(int argc, char**argv, long ps[], long expected[]) {
         parallel_wrap(argc, argv);
 
         for (int j = 0; j < args->batch_size; ++j) {
-            int failed = check_long(batch[j]->distances, expected);
+            int failed = check_long(batch[j]->distances, expected[j]);
 
             if (failed == 1) {
                 sprintf(out_text, "BFS test failed for batch %i and P = %ld", j, args->nr_processors);
@@ -205,7 +205,7 @@ void first_test(int argc, char**argv) {
 
     batch[0]->is_sparse = false;
 
-    long expected[] = {0, 1, 1, 1, 2, 2, 3};
+    long expected[1][7] = {{0, 1, 1, 1, 2, 2, 3}};
     long ps[] = {1, 7};
     p_count = 2;
 
@@ -252,7 +252,7 @@ void second_test(int argc, char**argv) {
     to_sparse();
     create_batch();
 
-    long expected[] = {0, 2, 1, 1, 1, 2, 1, 2, 1, 2};
+    long expected[1][10] = {{0, 2, 1, 1, 1, 2, 1, 2, 1, 2}};
     long ps[] = {1, 2, 5};
     p_count = 3;
 
@@ -300,7 +300,7 @@ void third_test(int argc, char**argv) {
     to_sparse();
     create_batch();
 
-    long expected[] = {0, 1, 2, 3, 1, 3, 2, 3, 3};
+    long expected[1][9] = {{0, 1, 2, 3, 1, 3, 2, 3, 3}};
     long ps[] = {1, 3};
     p_count = 2;
 
@@ -329,6 +329,7 @@ void third_test(int argc, char**argv) {
 void test_batched(int argc, char**argv) {
     printf("Performing batched test with 9x9 graph. \n\n");
 
+    // TODO: test with different sources! Calculate complete betweenness.
     args->nr_vertices = 9;
     args->batch_size = 4;
 
@@ -348,12 +349,19 @@ void test_batched(int argc, char**argv) {
     to_sparse();
     create_batch();
 
-    long expected[] = {0, 1, 2, 3, 1, 3, 2, 3, 3};
+    long expected[4][9] = {
+            {0, 1, 2, 3, 1, 3, 2, 3, 3},
+            {1, 0, 1, 2, 2, 4, 3, 4, 2},
+            {2, 1, 0, 1, 1, 3, 2, 3, 1},
+            {3, 2, 1, 0, 2, 3, 2, 3, 1},
+    };
+
     long ps[] = {1, 3};
     p_count = 2;
 
     for (int j = 0; j < args->batch_size; ++j) {
         batch[j]->is_sparse = false;
+        batch[j]->source = j;
     }
 
     test_bfs(argc, argv, ps, expected);

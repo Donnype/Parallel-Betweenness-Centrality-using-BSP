@@ -87,24 +87,36 @@ void parallel_bfs() {
     long **next_neighbourhoods = allocate_and_register_matrix(-1, true);
 
     for (int i = 0; i < args->nr_processors; ++i) {
-        done[i] = 0;
         bsp_push_reg(&done[i], sizeof(long));
     }
 
     // It is convenient to keep track of the distances received by each processor separately.
     long *own_distances = (long *) malloc(args->vertices_per_proc * sizeof(long));
-    memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
 
     for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
+        memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
         long **distances = allocate_and_register_matrix(-1, true);
-        bsp_sync();
+
+        for (int i = 0; i < args->nr_processors; ++i) {
+            neighbourhood[i][0] = -1;
+            next_neighbourhoods[i][0] = -1;
+            done[i] = 0;
+        }
 
         if (current_process_id == batch[batch_nr]->source % args->nr_processors) {
             // We assume that the src vertex was received from processor 0.
             neighbourhood[current_process_id][0] = batch[batch_nr]->source;
+            neighbourhood[current_process_id][1] = -1;
         }
 
         for (long level = 1; level < args->nr_vertices; ++level) {
+            bsp_sync();
+
+            // Check if all the processors are done and if so, move on.
+            if (all(done, 1)) {
+                break;
+            }
+
             memset(counters, 0, args->nr_processors * sizeof(long));
 
             // We loop over the nodes received from each processor.
@@ -164,13 +176,6 @@ void parallel_bfs() {
                 // Send the new neighbourhood to the relevant processor, and if this processor is done in this level.
                 bsp_put(i, next_neighbourhoods[i], neighbourhood[current_process_id], 0, counters[i] * sizeof(long));
                 bsp_put(i, &done[current_process_id], &done[current_process_id], 0, sizeof(long));
-            }
-
-            bsp_sync();
-
-            // Check if all the processors are done and if so, move on.
-            if (all(done, 1)) {
-                break;
             }
         }
 
