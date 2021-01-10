@@ -162,7 +162,11 @@ int main(int argc, char **argv) {
 
         construct_graph(adjacency);
     } else {
-        generate_graph();
+        if (args->set_long) {
+            generate_long_graph(args->factor);
+        } else {
+            generate_graph();
+        }
     }
 
     if (args->set_sparse) {

@@ -19,6 +19,7 @@ typedef struct Graph {
 } Graph;
 
 void generate_graph();
+void generate_long_graph(long factor);
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
 long get_max_distance(long index);
 void to_sparse();

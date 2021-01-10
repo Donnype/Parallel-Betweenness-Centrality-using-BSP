@@ -12,10 +12,12 @@ typedef struct Args {
     long vertices_per_proc;
     double runs;
     long batch_size;
+    long factor;
     bool set_sparse;
     bool output;
     bool print_matrix;
     bool test;
+    bool set_long;
 } Args;
 
 void read_args(int argc, char **argv);

@@ -36,6 +36,36 @@ short **generate_symmetric_mat() {
 }
 
 
+short **generate_adjacency_long_graph(long factor) {
+    srand(time(NULL));
+    short **matrix = (short **) malloc(args->nr_vertices * sizeof(short *));
+
+    for (long i = 0; i < args->nr_vertices; ++i) {
+        matrix[i] = (short *) calloc(args->nr_vertices, sizeof(short));
+    }
+
+    for (long i = 0; i < args->nr_vertices - 1; ++i) {
+        matrix[i][i + 1] = 1; // Start with a long graph by tying every node i to i + 1, but not the first and last.
+        matrix[i + 1][i] = 1;
+    }
+
+    for (long i = 0; i < args->nr_vertices; ++i) {
+        for (long j = i; j - i < args->nr_vertices / factor && j < args->nr_vertices; ++j) { // By reducing by factor, the graph stays "thin"
+            if (matrix[i][j] == 1) {
+                continue;
+            }
+
+            short val = (rand() % args->sparsity) == 0;
+
+            matrix[i][j] = val;
+            matrix[j][i] = val;
+        }
+    }
+
+    return matrix;
+}
+
+
 short **fill_buf(short graph[args->nr_vertices][args->nr_vertices]) {
     short **matrix = (short **) malloc(args->nr_vertices * sizeof(short *));
 
@@ -103,6 +133,13 @@ void initialize_properties(Graph* g) {
 void generate_graph() {
     graph = (Graph*) malloc(sizeof(Graph));
     graph->adjacency_matrix = generate_symmetric_mat();
+    initialize_properties(graph);
+}
+
+
+void generate_long_graph(long factor) {
+    graph = (Graph*) malloc(sizeof(Graph));
+    graph->adjacency_matrix = generate_adjacency_long_graph(factor);
     initialize_properties(graph);
 }
 

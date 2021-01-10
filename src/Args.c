@@ -18,12 +18,14 @@ void read_args(int argc, char **argv) {
     args->nr_processors = 1;
     args->runs = 5.0;
     args->batch_size = 1;
+    args->factor = 1;
     args->set_sparse = false;
     args->output = false;
     args->print_matrix = false;
     args->test = false;
+    args->set_long = false;
 
-    while ((c = getopt(argc, argv, ":i:n:s:p:r:b:o:S:m:t:")) != -1) {
+    while ((c = getopt(argc, argv, ":i:n:s:p:r:b:f:o:S:m:t:l:")) != -1) {
         switch (c) {
             case 'i':
                 args->neighbourhood_size = strtoul(optarg, NULL, 10);
@@ -43,6 +45,9 @@ void read_args(int argc, char **argv) {
             case 'b':
                 args->batch_size = strtol(optarg, NULL, 10);
                 break;
+            case 'f':
+                args->factor = strtol(optarg, NULL, 10);
+                break;
             case 'o':
                 args->output = true;
                 break;
@@ -54,6 +59,9 @@ void read_args(int argc, char **argv) {
                 break;
             case 't':
                 args->test = true;
+                break;
+            case 'l':
+                args->set_long = true;
                 break;
         }
     }
