@@ -210,8 +210,8 @@ int main(int argc, char **argv) {
 
 //    int val = bfs(argc, argv);
 //    int val = seq_bfs();
-    int val = dependency(argc, argv);
-//    int val = betweenness(argc, argv);
+//    int val = dependency(argc, argv);
+    int val = betweenness(argc, argv);
 
     free_batch();
     free(args);
