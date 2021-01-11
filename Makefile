@@ -1,4 +1,5 @@
 CC= bspcc
+#CC= /home/bissstud/MulticoreBSP-for-C/tools/bspcc
 CFLAGS= -std=c99 -Wall -O3 -D_POSIX_C_SOURCE=199309L
 LFLAGS= -lm
 

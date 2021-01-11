@@ -11,6 +11,7 @@ dependency
 memory_dep
 *dSYM
 memory.dSYM
+helpers.py
 massif.*
 profile_*
 *.png
