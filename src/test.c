@@ -13,9 +13,9 @@
 #define RESET   "\x1b[0m"
 
 
-extern Args* args;
-extern Graph* graph;
-extern Graph** batch;
+extern Args *args;
+extern Graph *graph;
+extern Graph **batch;
 
 long p_count;
 long double epsilon = 0.00001;
@@ -32,7 +32,7 @@ void print_failure() {
 }
 
 
-int check_long(long** result, long expected[args->nr_vertices]) {
+int check_long(long **result, long expected[args->nr_vertices]) {
     int failed = 0;
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
@@ -51,7 +51,7 @@ int check_long(long** result, long expected[args->nr_vertices]) {
 }
 
 
-int check_double(long double** result, long double expected[args->nr_vertices]) {
+int check_double(long double **result, long double expected[args->nr_vertices]) {
     int failed = 0;
 
     for (int i = 0; i < args->vertices_per_proc; ++i) {
@@ -69,7 +69,7 @@ int check_double(long double** result, long double expected[args->nr_vertices]) 
     return failed;
 }
 
-void test_bfs(int argc, char**argv, long ps[], long expected[args->batch_size][args->nr_vertices]) {
+void test_bfs(int argc, char **argv, long ps[], long expected[args->batch_size][args->nr_vertices]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
@@ -93,7 +93,8 @@ void test_bfs(int argc, char**argv, long ps[], long expected[args->batch_size][a
 }
 
 
-void test_dependency(int argc, char**argv, long ps[], long expected_sigmas[args->batch_size][args->nr_vertices], long double expected_deltas[args->batch_size][args->nr_vertices]) {
+void test_dependency(int argc, char **argv, long ps[], long expected_sigmas[args->batch_size][args->nr_vertices],
+                     long double expected_deltas[args->batch_size][args->nr_vertices]) {
     for (int i = 0; i < p_count; ++i) {
         args->nr_processors = ps[i];
         args->vertices_per_proc = args->nr_vertices / args->nr_processors;
@@ -104,25 +105,47 @@ void test_dependency(int argc, char**argv, long ps[], long expected_sigmas[args-
             int failed = check_long(batch[j]->sigmas, expected_sigmas[j]);
 
             if (failed == 1) {
-                sprintf(out_text, "Betweenness test sigmas failed for batch %i and P = %ld", j, args->nr_processors);
+                sprintf(out_text, "Dependency test sigmas failed for batch %i and P = %ld", j, args->nr_processors);
                 print_failure();
             } else {
-                sprintf(out_text, "Betweenness test sigmas succeeded for batch %i and P = %ld", j, args->nr_processors);
+                sprintf(out_text, "Dependency test sigmas succeeded for batch %i and P = %ld", j, args->nr_processors);
                 print_success();
             }
 
             failed = check_double(batch[j]->deltas, expected_deltas[j]);
 
             if (failed == 1) {
-                sprintf(out_text, "Betweenness test deltas failed for batch %i and P = %ld", j, args->nr_processors);
+                sprintf(out_text, "Dependency test deltas failed for batch %i and P = %ld", j, args->nr_processors);
                 print_failure();
             } else {
-                sprintf(out_text, "Betweenness test deltas succeeded for batch %i and P = %ld", j, args->nr_processors);
+                sprintf(out_text, "Dependency test deltas succeeded for batch %i and P = %ld", j, args->nr_processors);
                 print_success();
             }
         }
 
         clean_batch_data();
+        printf("\n");
+    }
+}
+
+
+void test_betweenness(int argc, char **argv, long ps[], long double expected[args->nr_vertices]) {
+    for (int i = 0; i < p_count; ++i) {
+        args->nr_processors = ps[i];
+        args->vertices_per_proc = args->nr_vertices / args->nr_processors;
+
+        parallel_betweenness_wrap(argc, argv);
+
+        int failed = check_double(graph->betweennesses, expected);
+
+        if (failed == 1) {
+            sprintf(out_text, "Betweenness test failed for P = %ld", args->nr_processors);
+            print_failure();
+        } else {
+            sprintf(out_text, "Betweenness test succeeded for P = %ld", args->nr_processors);
+            print_success();
+        }
+
         printf("\n");
     }
 }
@@ -134,13 +157,13 @@ void test_to_sparse() {
     args->nr_vertices = 7;
 
     short adjacency[7][7] = {
-        {0, 1, 1, 1, 0, 0, 0},
-        {1, 0, 0, 0, 1, 0, 0},
-        {1, 0, 0, 0, 0, 1, 0},
-        {1, 0, 0, 0, 0, 1, 0},
-        {0, 1, 0, 0, 0, 0, 1},
-        {0, 0, 1, 1, 0, 0, 1},
-        {0, 0, 0, 0, 1, 1, 0},
+            {0, 1, 1, 1, 0, 0, 0},
+            {1, 0, 0, 0, 1, 0, 0},
+            {1, 0, 0, 0, 0, 1, 0},
+            {1, 0, 0, 0, 0, 1, 0},
+            {0, 1, 0, 0, 0, 0, 1},
+            {0, 0, 1, 1, 0, 0, 1},
+            {0, 0, 0, 0, 1, 1, 0},
     };
 
     long expected_sparse[7][3] = {
@@ -171,7 +194,8 @@ void test_to_sparse() {
 
         for (int i = 0; i < graph->degrees[j]; ++i) {
             if (graph->adjacency_lists[j][i] != expected_sparse[j][i]) {
-                sprintf(out_text, "Column %i, row %i not as expected: %li != %li", j, i, graph->adjacency_lists[j][i], expected_sparse[j][i]);
+                sprintf(out_text, "Column %i, row %i not as expected: %li != %li", j, i, graph->adjacency_lists[j][i],
+                        expected_sparse[j][i]);
                 print_failure();
                 continue;
             }
@@ -185,19 +209,19 @@ void test_to_sparse() {
 }
 
 
-void first_test(int argc, char**argv) {
+void first_test(int argc, char **argv) {
     printf("Performing first test with 7x7 graph. \n\n");
 
     args->nr_vertices = 7;
 
     short adjacency[7][7] = {
-        {0, 1, 1, 1, 0, 0, 0},
-        {1, 0, 0, 0, 1, 0, 0},
-        {1, 0, 0, 0, 0, 1, 0},
-        {1, 0, 0, 0, 0, 1, 0},
-        {0, 1, 0, 0, 0, 0, 1},
-        {0, 0, 1, 1, 0, 0, 1},
-        {0, 0, 0, 0, 1, 1, 0},
+            {0, 1, 1, 1, 0, 0, 0},
+            {1, 0, 0, 0, 1, 0, 0},
+            {1, 0, 0, 0, 0, 1, 0},
+            {1, 0, 0, 0, 0, 1, 0},
+            {0, 1, 0, 0, 0, 0, 1},
+            {0, 0, 1, 1, 0, 0, 1},
+            {0, 0, 0, 0, 1, 1, 0},
     };
 
     construct_graph(adjacency);
@@ -218,7 +242,7 @@ void first_test(int argc, char**argv) {
     test_bfs(argc, argv, ps, expected);
 
     long expected_sigmas[1][7] = {{1, 1, 1, 1, 1, 2, 3}};
-    long double expected_deltas[1][7] = {{0.0, 4.0/3.0, 5.0/6.0, 5.0/6.0, 1.0/3.0, 2.0/3.0, 0.0}};
+    long double expected_deltas[1][7] = {{0.0, 4.0 / 3.0, 5.0 / 6.0, 5.0 / 6.0, 1.0 / 3.0, 2.0 / 3.0, 0.0}};
 
     batch[0]->is_sparse = false;
     test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
@@ -231,22 +255,22 @@ void first_test(int argc, char**argv) {
 }
 
 
-void second_test(int argc, char**argv) {
+void second_test(int argc, char **argv) {
     printf("Performing second test with 10x10 graph. \n\n");
 
     args->nr_vertices = 10;
-    
+
     short adjacency[10][10] = {
-        {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
-        {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
-        {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
-        {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
-        {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-        {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
-        {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
-        {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
-        {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
+            {0, 0, 1, 1, 1, 0, 1, 0, 1, 0},
+            {0, 1, 1, 0, 1, 0, 0, 0, 0, 1},
+            {1, 1, 1, 1, 0, 1, 1, 0, 1, 0},
+            {1, 0, 1, 1, 1, 0, 0, 1, 0, 0},
+            {1, 1, 0, 1, 1, 1, 1, 0, 0, 1},
+            {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 1, 0, 0, 1, 1, 1},
+            {0, 0, 0, 1, 0, 0, 1, 0, 0, 0},
+            {1, 0, 1, 0, 0, 0, 1, 0, 1, 1},
+            {0, 1, 0, 0, 1, 1, 1, 0, 1, 0},
     };
 
     construct_graph(adjacency);
@@ -267,7 +291,7 @@ void second_test(int argc, char**argv) {
     printf("\n");
 
     long expected_sigmas[1][10] = {{1, 2, 1, 1, 1, 2, 1, 2, 1, 3}};
-    long double expected_deltas[1][10] = {{0.0, 0.0, 1.0, 1.0/2.0, 4.0/3.0, 0.0, 5.0/6.0, 0.0, 1.0/3.0, 0.0}};
+    long double expected_deltas[1][10] = {{0.0, 0.0, 1.0, 1.0 / 2.0, 4.0 / 3.0, 0.0, 5.0 / 6.0, 0.0, 1.0 / 3.0, 0.0}};
 
     batch[0]->is_sparse = false;
     test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
@@ -280,21 +304,21 @@ void second_test(int argc, char**argv) {
 }
 
 
-void third_test(int argc, char**argv) {
+void third_test(int argc, char **argv) {
     printf("Performing third test with 9x9 graph. \n\n");
 
     args->nr_vertices = 9;
 
     short adjacency[9][9] = {
-        {0, 1, 0, 0, 1, 0, 0, 0, 0},
-        {1, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 1, 0, 1, 1, 0, 0, 0, 1},
-        {0, 0, 1, 0, 0, 0, 0, 0, 1},
-        {1, 0, 1, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 1, 1, 0, 1, 1},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 1, 1, 0, 0, 1, 0, 0}
+            {0, 1, 0, 0, 1, 0, 0, 0, 0},
+            {1, 0, 1, 0, 0, 0, 0, 0, 0},
+            {0, 1, 0, 1, 1, 0, 0, 0, 1},
+            {0, 0, 1, 0, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 0, 0, 1, 0, 0},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 0, 0, 1, 1, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 1, 1, 0, 0, 1, 0, 0}
     };
 
     construct_graph(adjacency);
@@ -314,7 +338,7 @@ void third_test(int argc, char**argv) {
     printf("\n");
 
     long expected_sigmas[1][9] = {{1, 1, 2, 2, 1, 1, 1, 1, 3}};
-    long double expected_deltas[1][9] = {{0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0}};
+    long double expected_deltas[1][9] = {{0.0, 4.0 / 3.0, 5.0 / 3.0, 0.0, 14.0 / 3.0, 0.0, 7.0 / 3.0, 0.0, 0.0}};
 
     batch[0]->is_sparse = false;
     test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
@@ -327,22 +351,22 @@ void third_test(int argc, char**argv) {
 }
 
 
-void test_batched(int argc, char**argv) {
+void test_batched(int argc, char **argv) {
     printf("Performing batched test with 9x9 graph. \n\n");
 
     args->nr_vertices = 9;
-    args->batch_size = 9;
+    args->batch_size = 3;
 
     short adjacency[9][9] = {
-        {0, 1, 0, 0, 1, 0, 0, 0, 0},
-        {1, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 1, 0, 1, 1, 0, 0, 0, 1},
-        {0, 0, 1, 0, 0, 0, 0, 0, 1},
-        {1, 0, 1, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 1, 1, 0, 1, 1},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 1, 1, 0, 0, 1, 0, 0}
+            {0, 1, 0, 0, 1, 0, 0, 0, 0},
+            {1, 0, 1, 0, 0, 0, 0, 0, 0},
+            {0, 1, 0, 1, 1, 0, 0, 0, 1},
+            {0, 0, 1, 0, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 0, 0, 1, 0, 0},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 0, 0, 1, 1, 0, 1, 1},
+            {0, 0, 0, 0, 0, 0, 1, 0, 0},
+            {0, 0, 1, 1, 0, 0, 1, 0, 0}
     };
 
     construct_graph(adjacency);
@@ -379,26 +403,26 @@ void test_batched(int argc, char**argv) {
     printf("\n");
 
     long expected_sigmas[9][9] = {
-        {1, 1, 2, 2, 1, 1, 1, 1, 3},
-        {1, 1, 1, 1, 2, 3, 3, 3, 1},
-        {2, 1, 1, 1, 1, 2, 2, 2, 1},
-        {2, 1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 2, 1, 1, 1, 1, 1, 1, 2},
-        {1, 3, 2, 1, 1, 1, 1, 1, 1},
-        {1, 3, 2, 1, 1, 1, 1, 1, 1},
-        {1, 3, 2, 1, 1, 1, 1, 1, 1},
-        {3, 1, 1, 1, 2, 1, 1, 1, 1},
+            {1, 1, 2, 2, 1, 1, 1, 1, 3},
+            {1, 1, 1, 1, 2, 3, 3, 3, 1},
+            {2, 1, 1, 1, 1, 2, 2, 2, 1},
+            {2, 1, 1, 1, 1, 1, 1, 1, 1},
+            {1, 2, 1, 1, 1, 1, 1, 1, 2},
+            {1, 3, 2, 1, 1, 1, 1, 1, 1},
+            {1, 3, 2, 1, 1, 1, 1, 1, 1},
+            {1, 3, 2, 1, 1, 1, 1, 1, 1},
+            {3, 1, 1, 1, 2, 1, 1, 1, 1},
     };
     long double expected_deltas[9][9] = {
-            {0.0, 4.0/3.0, 5.0/3.0, 0.0, 14.0/3.0, 0.0, 7.0/3.0, 0.0, 0.0},
-            {3.0/2.0, 0.0, 9.0/2.0, 0.0, 2.0, 0.0, 2.0, 0.0, 1.0},
-            {0.0, 1.0/2.0, 0.0, 0.0, 2.0, 0.0, 2.0, 0.0, 3.0/2.0},
-            {0.0, 1.0/2.0, 3.0, 0.0, 1.0/2.0, 0.0, 2.0, 0.0, 3.0},
-            {1.0/2.0, 0.0, 2.0, 0.0, 0.0, 0.0, 5.0/2.0, 0.0, 0.0},
-            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 7.0, 0.0, 11.0/6.0},
-            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 0.0, 0.0, 11.0/6.0},
-            {1.0/3.0, 0.0, 2.0/3.0, 0.0, 13.0/6.0, 0.0, 7.0, 0.0, 11.0/6.0},
-            {0.0, 1.0/3.0, 13.0/6.0, 0.0, 2.0/3.0, 0.0, 17.0/6.0, 0.0, 0.0},
+            {0.0,       4.0 / 3.0, 5.0 / 3.0,  0.0, 14.0 / 3.0, 0.0, 7.0 / 3.0,  0.0, 0.0},
+            {3.0 / 2.0, 0.0,       9.0 / 2.0,  0.0, 2.0,        0.0, 2.0,        0.0, 1.0},
+            {0.0,       1.0 / 2.0, 0.0,        0.0, 2.0,        0.0, 2.0,        0.0, 3.0 / 2.0},
+            {0.0,       1.0 / 2.0, 3.0,        0.0, 1.0 / 2.0,  0.0, 2.0,        0.0, 3.0},
+            {1.0 / 2.0, 0.0,       2.0,        0.0, 0.0,        0.0, 5.0 / 2.0,  0.0, 0.0},
+            {1.0 / 3.0, 0.0,       2.0 / 3.0,  0.0, 13.0 / 6.0, 0.0, 7.0,        0.0, 11.0 / 6.0},
+            {1.0 / 3.0, 0.0,       2.0 / 3.0,  0.0, 13.0 / 6.0, 0.0, 0.0,        0.0, 11.0 / 6.0},
+            {1.0 / 3.0, 0.0,       2.0 / 3.0,  0.0, 13.0 / 6.0, 0.0, 7.0,        0.0, 11.0 / 6.0},
+            {0.0,       1.0 / 3.0, 13.0 / 6.0, 0.0, 2.0 / 3.0,  0.0, 17.0 / 6.0, 0.0, 0.0},
     };
 
     for (int j = 0; j < args->batch_size; ++j) {
@@ -412,6 +436,11 @@ void test_batched(int argc, char**argv) {
         batch[j]->is_sparse = true;
     }
     test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
+
+    printf("\nPerforming betweenness test.\n");
+
+    long double expected_betweennesses[9] = {3.0, 8.0 / 3.0, 46.0 / 3.0, 0.0, 98.0 / 6.0, 0.0, 83.0 / 3.0, 0.0, 11.0};
+    test_betweenness(argc, argv, ps, expected_betweennesses);
 
     free_batch();
 }

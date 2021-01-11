@@ -127,6 +127,7 @@ void initialize_properties(Graph* g) {
     g->is_sparse = NULL;
     g->adjacency_lists = NULL;
     g->degrees = NULL;
+    g->betweennesses = NULL;
 }
 
 

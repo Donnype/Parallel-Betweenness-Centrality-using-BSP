@@ -1,6 +1,7 @@
 #include <bsp.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
 #include "../include/bfs.h"
@@ -264,13 +265,13 @@ void parallel_sigmas() {
 
         bsp_sync();
 
+        batch[batch_nr]->distances = distances;
+        batch[batch_nr]->sigmas = sigmas;
+
         for (int i = 0; i < args->nr_processors; ++i) {
             bsp_pop_reg(distances[i]);
             bsp_pop_reg(sigmas[i]);
         }
-
-        batch[batch_nr]->distances = distances;
-        batch[batch_nr]->sigmas = sigmas;
     }
 
     for (int i = 0; i < args->nr_processors; ++i) {
@@ -453,27 +454,45 @@ void parallel_dependency_wrap(int argc, char **argv) {
 void parallel_betweenness() {
     bsp_begin(args->nr_processors);
 
+    long current_process_id = bsp_pid();
+
     if (args->nr_vertices % args->batch_size != 0) {
         printf("Number of vertices is not divisible by batch size!");
         return;
     }
 
-    long double *totals = calloc(args->nr_vertices, sizeof(long double));
+    long double *totals = calloc(args->vertices_per_proc, sizeof(long double));
 
     for (int i = 0; i < args->nr_vertices / args->batch_size; ++i) {
         parallel_sigmas();
         parallel_dependency();
 
         for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
-            for (int proc = 0; proc < args->nr_processors; ++proc) {
-                for (int j = 0; j < args->vertices_per_proc; ++j) {
-                    long index = j * args->nr_processors + proc;
+            batch[batch_nr]->source = batch[batch_nr]->source + args->batch_size;
 
-                    totals[index] += batch[batch_nr]->deltas[proc][j];
-                }
+            for (int j = 0; j < args->vertices_per_proc; ++j) {
+                printf("Adding %LF \n", batch[batch_nr]->deltas[current_process_id][j]);
+                totals[j] += batch[batch_nr]->deltas[current_process_id][j];
             }
         }
+
+        bsp_sync();
     }
+
+    clean_batch_data();
+
+    if (current_process_id == 0) {
+        graph = (Graph*) malloc(sizeof(Graph));
+        initialize_properties(graph);
+        graph->betweennesses = allocate_and_register_matrix_double(0, true);
+    }
+    bsp_sync();
+
+    bsp_put(0, totals, graph->betweennesses[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
+
+    bsp_sync();
+
+    free(totals);
 
     bsp_end();
 

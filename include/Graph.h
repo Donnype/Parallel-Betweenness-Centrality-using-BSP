@@ -16,8 +16,10 @@ typedef struct Graph {
     bool is_sparse; // A flag checking if the graph uses the sparse representation of its adjacent neighbours.
     long ** adjacency_lists; // The sparser list of adjacency lists of the vertices
     long * degrees; // Array counting the degrees of each vertex, for looping over the adjacency list.
+    long double ** betweennesses; // Array to sum the dependencies in to get the betweennesses.
 } Graph;
 
+void initialize_properties(Graph* g);
 void generate_graph();
 void generate_long_graph(long factor);
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
