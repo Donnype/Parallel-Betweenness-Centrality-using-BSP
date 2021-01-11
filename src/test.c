@@ -146,6 +146,8 @@ void test_betweenness(int argc, char **argv, long ps[], long double expected[arg
             print_success();
         }
 
+        free_matrix_double(&(graph->betweennesses), args->nr_processors);
+
         printf("\n");
     }
 }
@@ -390,7 +392,6 @@ void test_batched(int argc, char **argv) {
 
     for (int j = 0; j < args->batch_size; ++j) {
         batch[j]->is_sparse = false;
-        batch[j]->source = j;
     }
 
     test_bfs(argc, argv, ps, expected);

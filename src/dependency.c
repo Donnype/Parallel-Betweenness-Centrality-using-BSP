@@ -43,6 +43,8 @@ void update_sigmas(long *own_sigmas, long *own_distances, long **neighbourhood, 
                 break;
             }
 
+//            printf("distance own: %li for index %li vertex %li \n", own_distances[get_index(vertex)], get_index(vertex), vertex);
+
             // Skip the vertex if we have seen it before.
             if (own_distances[get_index(vertex)] >= 0) {
                 continue;
@@ -185,6 +187,7 @@ void parallel_sigmas() {
     for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
         long **distances = allocate_and_register_matrix(-1, true);
         long **sigmas = allocate_and_register_matrix(0, true);
+
         memset(own_distances, -1, args->vertices_per_proc * sizeof(long));
         memset(own_sigmas, 0, args->vertices_per_proc * sizeof(long));
 
@@ -197,7 +200,9 @@ void parallel_sigmas() {
         if (current_process_id == batch[batch_nr]->source % args->nr_processors) {
             // We assume that the source vertex was received from the processor containing it.
             neighbourhood[current_process_id][0] = batch[batch_nr]->source;
-            neighbourhood[current_process_id][1] = -1;
+            if (args->vertices_per_proc > 1) {
+                neighbourhood[current_process_id][1] = -1;
+            }
             next_sigmas[current_process_id][0] = 1;
         }
 
@@ -303,7 +308,6 @@ void parallel_dependency() {
     for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
         // finding the first vertex with the largest distance
         long max_distance = get_max_distance(batch_nr);
-
         memset(counters, 0, args->nr_processors * sizeof(long));
 
         for (int i = 0; i < args->nr_processors; ++i) {
@@ -464,37 +468,42 @@ void parallel_betweenness() {
     long double *totals = calloc(args->vertices_per_proc, sizeof(long double));
 
     for (int i = 0; i < args->nr_vertices / args->batch_size; ++i) {
+        create_batch();
+        bsp_sync();
+
         parallel_sigmas();
+        printf("gaan we\n");
         parallel_dependency();
 
         for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
-            batch[batch_nr]->source = batch[batch_nr]->source + args->batch_size;
-
             for (int j = 0; j < args->vertices_per_proc; ++j) {
-                printf("Adding %LF \n", batch[batch_nr]->deltas[current_process_id][j]);
-                totals[j] += batch[batch_nr]->deltas[current_process_id][j];
+                totals[j] = totals[j] + batch[batch_nr]->deltas[current_process_id][j];
             }
         }
 
-        bsp_sync();
+        for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
+            batch[batch_nr]->source = batch[batch_nr]->source + i * args->batch_size;
+        }
+
+        break;
+//        bsp_sync();
+//
+//        free_batch();
     }
 
-    clean_batch_data();
+    long double **betweennesses = allocate_and_register_matrix_double(0, true);
 
-    if (current_process_id == 0) {
-        graph = (Graph*) malloc(sizeof(Graph));
-        initialize_properties(graph);
-        graph->betweennesses = allocate_and_register_matrix_double(0, true);
-    }
     bsp_sync();
 
-    bsp_put(0, totals, graph->betweennesses[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
+    bsp_put(0, totals, betweennesses[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
 
     bsp_sync();
 
     free(totals);
 
     bsp_end();
+
+    graph->betweennesses = betweennesses;
 
     return;
 }

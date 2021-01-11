@@ -162,6 +162,7 @@ void create_batch() {
         batch[i]->adjacency_lists = graph->adjacency_lists;
         batch[i]->degrees = graph->degrees;
         batch[i]->is_sparse = graph->is_sparse;
+        batch[i]->source = i;
     }
 }
 
@@ -229,8 +230,6 @@ void free_graph(Graph *g) {
 
 
 void free_batch() {
-    free_graph(graph);
-
     for (int i = 0; i < args->batch_size; ++i) {
         clean_graph_data(batch[i]);
     }
