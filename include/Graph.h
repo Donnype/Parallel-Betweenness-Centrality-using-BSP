@@ -25,7 +25,7 @@ void generate_long_graph(long factor);
 void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]);
 long get_max_distance(long index);
 void to_sparse();
-void create_batch();
+Graph ** create_batch();
 void clean_batch_data();
 void free_batch();
 void free_graph(Graph* g);

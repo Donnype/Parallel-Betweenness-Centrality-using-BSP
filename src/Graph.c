@@ -152,7 +152,7 @@ void construct_graph(short matrix[args->nr_vertices][args->nr_vertices]) {
 }
 
 
-void create_batch() {
+Graph ** create_batch() {
     batch = malloc(args->batch_size * sizeof(Graph*));
 
     for (int i = 0; i < args->batch_size; ++i) {
@@ -164,6 +164,8 @@ void create_batch() {
         batch[i]->is_sparse = graph->is_sparse;
         batch[i]->source = i;
     }
+
+    return batch;
 }
 
 

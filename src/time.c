@@ -76,6 +76,17 @@ double time_dependency_parallel(int argc, char **argv) {
 }
 
 
+double time_betweenness_parallel(int argc, char **argv) {
+    struct timespec start, end;
+
+    clock_gettime(CLOCK_REALTIME, &start);
+    parallel_betweenness_wrap(argc, argv);
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    return diff(start, end);
+}
+
+
 int seq_bfs() {
     double ms = 0.0;
     args->nr_processors = 1;
@@ -121,7 +132,7 @@ int bfs(int argc, char **argv) {
 
 int dependency(int argc, char **argv) {
     double ms = 0.0;
-    printf("Betweenness parallel: \n\n");
+    printf("Dependency parallel: \n\n");
     printf("p\tms\n");
 
     for (args->nr_processors = 1; args->nr_processors < 9; args->nr_processors++) {
@@ -136,6 +147,24 @@ int dependency(int argc, char **argv) {
         printf("%ld\t%f\n", args->nr_processors, ms);
         ms = 0.0;
     }
+
+    return 0;
+}
+
+
+int betweenness(int argc, char **argv) {
+    double ms = 0.0;
+    printf("Betweenness parallel: \n\n");
+    printf("p\tms\n");
+
+    args->vertices_per_proc = args->nr_vertices / args->nr_processors;
+
+    for (int i = 0; i < args->runs; ++i) {
+        ms += time_betweenness_parallel(argc, argv);
+    }
+
+    ms = ms / args->runs;
+    printf("%ld\t%f\n", args->nr_processors, ms);
 
     return 0;
 }
@@ -173,15 +202,16 @@ int main(int argc, char **argv) {
         to_sparse();
     }
 
-    create_batch();
 
     if (args->print_matrix == 1) {
         print_matrix(graph->adjacency_matrix);
     }
+    create_batch();
 
 //    int val = bfs(argc, argv);
 //    int val = seq_bfs();
     int val = dependency(argc, argv);
+//    int val = betweenness(argc, argv);
 
     free_batch();
     free(args);

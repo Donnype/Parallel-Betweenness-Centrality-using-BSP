@@ -468,11 +468,10 @@ void parallel_betweenness() {
     long double *totals = calloc(args->vertices_per_proc, sizeof(long double));
 
     for (int i = 0; i < args->nr_vertices / args->batch_size; ++i) {
-        create_batch();
+        Graph ** b = create_batch();
         bsp_sync();
 
         parallel_sigmas();
-        printf("gaan we\n");
         parallel_dependency();
 
         for (int batch_nr = 0; batch_nr < args->batch_size; ++batch_nr) {
@@ -485,25 +484,25 @@ void parallel_betweenness() {
             batch[batch_nr]->source = batch[batch_nr]->source + i * args->batch_size;
         }
 
+        bsp_sync();
+
         break;
-//        bsp_sync();
-//
-//        free_batch();
     }
 
-    long double **betweennesses = allocate_and_register_matrix_double(0, true);
 
-    bsp_sync();
-
-    bsp_put(0, totals, betweennesses[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
-
-    bsp_sync();
-
+//    long double **betweennesses = allocate_and_register_matrix_double(0, true);
+//
+//    bsp_sync();
+//
+//    bsp_put(0, totals, betweennesses[current_process_id], 0, args->vertices_per_proc * sizeof(long double));
+//
+//    bsp_sync();
+//
     free(totals);
 
     bsp_end();
 
-    graph->betweennesses = betweennesses;
+//    graph->betweennesses = betweennesses;
 
     return;
 }
