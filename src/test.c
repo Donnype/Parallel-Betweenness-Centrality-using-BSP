@@ -438,9 +438,6 @@ void test_batched(int argc, char **argv) {
     }
     test_dependency(argc, argv, ps, expected_sigmas, expected_deltas);
 
-    printf("\nPerforming betweenness test.\n");
-
-    // long double expected_betweennesses[9] = {3.0, 8.0 / 3.0, 46.0 / 3.0, 0.0, 98.0 / 6.0, 0.0, 83.0 / 3.0, 0.0, 11.0};
 
     free_batch();
 }
